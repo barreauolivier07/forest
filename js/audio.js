@@ -65,22 +65,31 @@ export function playAlertTick() {
   beep(1100, 90, "square", 0.15);
 }
 
-let frenchVoice = null;
-function pickFrenchVoice() {
-  if (!("speechSynthesis" in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  return (
-    voices.find((v) => v.lang && v.lang.toLowerCase().startsWith("fr")) ||
-    voices[0] ||
-    null
-  );
+// Le Web Speech API n'expose aucune info de genre sur les voix : on approxime via des
+// indices dans leur nom (variable selon le téléphone/OS — au pire, les deux choix
+// retombent sur la même unique voix française disponible).
+const FEMALE_NAME_HINTS = /amélie|amelie|audrey|aurélie|aurelie|céline|celine|chloé|chloe|julie|léa|lea|marie|virginie|hortense|female|femme/i;
+const MALE_NAME_HINTS = /thomas|nicolas|daniel|henri|bruno|guillaume|maxime|paul|male|homme/i;
+
+function frenchVoices() {
+  if (!("speechSynthesis" in window)) return [];
+  return window.speechSynthesis.getVoices().filter((v) => v.lang && v.lang.toLowerCase().startsWith("fr"));
 }
 
-if ("speechSynthesis" in window) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    frenchVoice = pickFrenchVoice();
-  };
-  frenchVoice = pickFrenchVoice();
+function pickVoiceForGender(gender) {
+  const voices = frenchVoices();
+  if (voices.length === 0) return null;
+  const hints = gender === "female" ? FEMALE_NAME_HINTS : MALE_NAME_HINTS;
+  return voices.find((v) => hints.test(v.name)) || voices[0];
+}
+
+let currentVolume = 1;
+let currentGender = "male";
+
+/** Applique les réglages utilisateur (volume, genre de voix) aux prochaines annonces. */
+export function applyAudioSettings(settings) {
+  currentVolume = settings.voiceVolume;
+  currentGender = settings.voiceGender;
 }
 
 export function speak(text) {
@@ -88,12 +97,29 @@ export function speak(text) {
   try {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "fr-FR";
-    if (!frenchVoice) frenchVoice = pickFrenchVoice();
-    if (frenchVoice) utter.voice = frenchVoice;
+    const voice = pickVoiceForGender(currentGender);
+    if (voice) utter.voice = voice;
     utter.rate = 1;
+    utter.volume = currentVolume;
     window.speechSynthesis.speak(utter);
   } catch {
     /* synthèse vocale indisponible, on ignore */
+  }
+}
+
+/** Aperçu immédiat (réglages de la boîte de dialogue Paramètres, pas encore enregistrés). */
+export function previewVoice(text, volume, gender) {
+  if (!("speechSynthesis" in window) || !text) return;
+  try {
+    window.speechSynthesis.cancel(); // évite d'empiler les aperçus pendant qu'on glisse le curseur
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "fr-FR";
+    const voice = pickVoiceForGender(gender);
+    if (voice) utter.voice = voice;
+    utter.volume = volume;
+    window.speechSynthesis.speak(utter);
+  } catch {
+    /* ignore */
   }
 }
 

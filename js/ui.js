@@ -6,9 +6,11 @@ import {
   duplicateSequence,
   loadHistory,
   saveHistory,
+  loadSettings,
+  saveSettings,
   uid,
 } from "./storage.js";
-import { unlockAudio } from "./audio.js";
+import { unlockAudio, applyAudioSettings, previewVoice } from "./audio.js";
 import {
   WorkoutPlayer,
   formatMmSs,
@@ -38,6 +40,8 @@ const ids = [
   "seq-distance-value", "seq-distance-voice-mode",
   "seq-speed-enabled", "fields-speed-option", "seq-speed-target", "seq-speed-tolerance",
   "seq-repetitions",
+  "btn-settings", "settings-dialog", "settings-form",
+  "set-volume", "set-firstname", "btn-share-app",
 ];
 
 function parseMmSs(str) {
@@ -532,6 +536,64 @@ function wireEvents() {
   el["btn-player-stop"].addEventListener("click", () => {
     stopPlayerWithConfirm();
   });
+
+  el["btn-settings"].addEventListener("click", () => openSettingsDialog());
+
+  let previewTimer = null;
+  const previewNow = () => {
+    const volume = parseFloat(el["set-volume"].value);
+    const gender = el["settings-form"].querySelector('input[name="set-gender"]:checked').value;
+    const name = el["set-firstname"].value.trim() || "Olivier";
+    previewVoice(`Bonjour ${name}`, volume, gender);
+  };
+  el["set-volume"].addEventListener("input", () => {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(previewNow, 350);
+  });
+  el["settings-form"].querySelectorAll('input[name="set-gender"]').forEach((radio) => {
+    radio.addEventListener("change", previewNow);
+  });
+
+  el["btn-share-app"].addEventListener("click", async () => {
+    const shareData = {
+      title: "Forest, le compositeur de vos séances",
+      text: "Essaie Forest, mon app d'entraînements fractionnés !",
+      url: location.origin + location.pathname,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        /* partage annulé par l'utilisateur, on ignore */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      alert("Le partage direct n'est pas disponible ici : le lien a été copié dans le presse-papiers.");
+    } catch {
+      alert(shareData.url);
+    }
+  });
+
+  el["settings-dialog"].addEventListener("close", () => {
+    if (el["settings-dialog"].returnValue !== "save") return;
+    const settings = {
+      voiceVolume: parseFloat(el["set-volume"].value),
+      firstName: el["set-firstname"].value.trim() || "Olivier",
+      voiceGender: el["settings-form"].querySelector('input[name="set-gender"]:checked').value,
+    };
+    saveSettings(settings);
+    applyAudioSettings(settings);
+  });
+}
+
+function openSettingsDialog() {
+  const settings = loadSettings();
+  el["set-volume"].value = settings.voiceVolume;
+  el["set-firstname"].value = settings.firstName;
+  el["settings-form"].querySelector(`input[name="set-gender"][value="${settings.voiceGender}"]`).checked = true;
+  el["settings-dialog"].showModal();
 }
 
 function isStandalone() {
@@ -574,6 +636,7 @@ function setupInstallPrompt() {
 
 export function initUI() {
   for (const id of ids) el[id] = document.getElementById(id);
+  applyAudioSettings(loadSettings());
   wireEvents();
   setupInstallPrompt();
   showView("view-list");

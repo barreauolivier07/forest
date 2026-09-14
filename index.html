@@ -15,6 +15,7 @@
 <header class="app-header">
   <button id="btn-back" class="icon-btn" hidden aria-label="Retour">←</button>
   <h1 id="header-title">Forest</h1>
+  <button id="btn-settings" class="icon-btn" aria-label="Paramètres">⚙️</button>
 </header>
 
 <main>
@@ -147,6 +148,39 @@
     <menu class="dialog-actions">
       <button value="cancel" class="btn-secondary">Annuler</button>
       <button id="btn-save-sequence" value="save" class="btn-primary">Enregistrer</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- PARAMETRES -->
+<dialog id="settings-dialog">
+  <form id="settings-form" method="dialog">
+    <h2>Paramètres</h2>
+
+    <label class="field">
+      <span>Volume de la voix</span>
+      <input id="set-volume" type="range" min="0" max="1" step="0.05" value="1" />
+    </label>
+
+    <label class="field">
+      <span>Prénom</span>
+      <input id="set-firstname" type="text" placeholder="Olivier" />
+    </label>
+
+    <fieldset class="field">
+      <legend>Voix</legend>
+      <div class="radio-row">
+        <label><input type="radio" name="set-gender" value="male" checked /> Masculine</label>
+        <label><input type="radio" name="set-gender" value="female" /> Féminine</label>
+      </div>
+      <p class="field-hint">Selon les voix installées sur ton téléphone, les deux choix peuvent parfois se ressembler.</p>
+    </fieldset>
+
+    <button type="button" id="btn-share-app" class="btn-secondary btn-block">🔗 Partager l'application</button>
+
+    <menu class="dialog-actions">
+      <button value="cancel" class="btn-secondary">Annuler</button>
+      <button id="btn-save-settings" value="save" class="btn-primary">Enregistrer</button>
     </menu>
   </form>
 </dialog>

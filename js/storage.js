@@ -1,5 +1,12 @@
 const STORAGE_KEY = "forest.workouts.v1";
 const HISTORY_KEY = "forest.history.v1";
+const SETTINGS_KEY = "forest.settings.v1";
+
+const DEFAULT_SETTINGS = {
+  voiceVolume: 1, // 0..1
+  firstName: "Olivier",
+  voiceGender: "male", // 'male' | 'female'
+};
 
 export function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -55,4 +62,17 @@ export function loadHistory() {
 
 export function saveHistory(history) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+export function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export function saveSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }

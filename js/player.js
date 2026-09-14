@@ -1,5 +1,6 @@
 import { GpsTracker, isGeolocationSupported } from "./gps.js";
 import { playStartTone, playStepEndTone, playWorkoutEndTone, playAlertTick, speak } from "./audio.js";
+import { loadSettings } from "./storage.js";
 
 const TICK_MS = 200;
 const SPEED_ALERT_COOLDOWN_MS = 8000;
@@ -55,6 +56,7 @@ export class WorkoutPlayer {
     this.speedSamplesTotal = 0;
     this.speedSamplesOnTarget = 0;
     this.stepStats = []; // détail par séquence exécutée, pour l'historique
+    this.firstName = loadSettings().firstName || "Olivier";
 
     const needsGps = this.steps.some((s) => s.sequence.metricType === "distance" || s.sequence.speedEnabled);
     this.gps = needsGps && isGeolocationSupported() ? new GpsTracker((state) => this._onGpsUpdate(state)) : null;
@@ -63,6 +65,7 @@ export class WorkoutPlayer {
   start() {
     this.startedAtDate = Date.now(); // horodatage affiché dans l'historique
     this.startedAtPerf = performance.now(); // horloge monotone pour calculer la durée réelle
+    speak(`C'est parti ${this.firstName} !`);
     if (this.gps) this.gps.start();
     this._requestWakeLock();
     this._goToStep(0);
@@ -152,7 +155,7 @@ export class WorkoutPlayer {
     if (idx >= this.steps.length) {
       this.stop();
       playWorkoutEndTone();
-      speak("Entraînement terminé, bravo !");
+      speak(`${this.firstName}, bravo, entraînement terminé !`);
       this.callbacks.onComplete();
       return;
     }
@@ -275,7 +278,7 @@ export class WorkoutPlayer {
     this.lastSpeedAlertAt = now;
 
     if (zone === "onTarget") {
-      speak(`Bien, ${speedPhrase(current)}, vitesse cible atteinte`);
+      speak(`${this.firstName}, ${speedPhrase(current)}, vitesse cible atteinte`);
     } else {
       playAlertTick();
       speak(zone === "below" ? `Accélère, ${speedPhrase(current)}` : `Ralentis, ${speedPhrase(current)}`);
