@@ -105,12 +105,17 @@ main {
   display: flex;
   flex-direction: column;
   gap: 28px;
+  margin-top: auto;
+  margin-bottom: 130px; /* laisse environ la hauteur de deux boutons en bas d'écran */
 }
 
 .menu-block {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 10px;
+  border: 1.5px solid #bfe0cc; /* liseré vert léger regroupant les deux boutons */
+  border-radius: 16px;
 }
 
 .btn-menu {

@@ -66,9 +66,9 @@ const APP_TITLE = "Forest, le compositeur de séances";
 
 const VIEW_TITLES = {
   "view-menu": APP_TITLE,
-  "view-history": "Historique",
-  "view-launch-list": "Les séances type",
-  "view-manage-list": "Les séances type",
+  "view-history": "Historique des séances",
+  "view-launch-list": "Les séances types",
+  "view-manage-list": "Les séances types",
   "view-editor": "Type de séance",
   "view-player": "Séance en cours",
 };
@@ -277,7 +277,7 @@ function renderHistoryList() {
     const badgeLabel = entry.completed ? "Terminé" : "Interrompu";
     const speedLine =
       entry.speedComplianceRatio != null
-        ? `<p class="card-subtitle">⚡ Vitesse cible respectée : ${Math.round(entry.speedComplianceRatio * 100)}%</p>`
+        ? `<p class="card-subtitle">⚡ Respect de la vitesse cible : ${Math.round(entry.speedComplianceRatio * 100)}%</p>`
         : "";
     li.querySelector(".card-subtitle").outerHTML =
       `<p class="card-subtitle">${formatMmSs(entry.durationSec)} · ${Math.round(entry.achievementRatio * 100)}% des objectifs · ` +
@@ -489,9 +489,14 @@ function updatePlayerReadout(info) {
 function wireEvents() {
   el["btn-back"].addEventListener("click", () => {
     if (currentViewName === "view-editor") {
+      const hadSequences = currentWorkout.sequences.length > 0;
       syncCurrentWorkout(); // abandonne le type de séance s'il n'a aucune séquence
-      showView("view-manage-list");
-      renderManageList();
+      if (hadSequences) {
+        showView("view-manage-list");
+        renderManageList();
+      } else {
+        showView("view-menu");
+      }
       return;
     }
     const target = BACK_TARGETS[currentViewName] || "view-menu";
