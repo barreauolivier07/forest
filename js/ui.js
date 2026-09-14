@@ -92,7 +92,7 @@ function persist() {
 // À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
 // affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
 // arrivée sur un téléphone donné.
-const APP_VERSION = "16";
+const APP_VERSION = "17";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -696,8 +696,24 @@ function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 }
 
+const INSTALL_WELCOME_KEY = "forest.installWelcomeShown";
+
+/** Affiche le message de confirmation d'installation, une seule fois (tous parcours confondus). */
+function showInstallSuccess(text) {
+  if (localStorage.getItem(INSTALL_WELCOME_KEY)) return;
+  localStorage.setItem(INSTALL_WELCOME_KEY, "1");
+  el["install-success"].textContent = text;
+  el["install-success"].hidden = false;
+}
+
 function setupInstallPrompt() {
-  if (isStandalone()) return; // déjà installée, rien à proposer
+  if (isStandalone()) {
+    // Safari (iPhone/iPad) ne déclenche aucun évènement "installation réussie" : c'est donc
+    // ce tout premier lancement depuis l'icône de l'écran d'accueil qui sert de confirmation,
+    // pour iOS comme pour tout autre navigateur arrivant ici en mode application installée.
+    showInstallSuccess("✅ Te voilà sur l'application installée, prête à l'emploi !");
+    return;
+  }
 
   if (isIos()) {
     el["ios-install-hint"].hidden = false;
@@ -715,7 +731,9 @@ function setupInstallPrompt() {
   window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
     el["btn-install-app"].hidden = true;
-    el["install-success"].hidden = false;
+    showInstallSuccess(
+      "✅ Application installée ! Tu peux maintenant fermer cet onglet et la lancer depuis l'icône sur ton écran d'accueil."
+    );
   });
 
   el["btn-install-app"].addEventListener("click", async () => {
