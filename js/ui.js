@@ -92,7 +92,7 @@ function persist() {
 // À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
 // affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
 // arrivée sur un téléphone donné.
-const APP_VERSION = "15";
+const APP_VERSION = "16";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -495,9 +495,11 @@ function stopPlayerWithConfirm() {
   player.stop();
   if (confirm("Enregistrer cette séance dans l'historique ?")) {
     saveHistoryEntry(summary);
+    renderHistoryList();
+    showView("view-history");
+  } else {
+    showView("view-menu");
   }
-  showView("view-launch-list");
-  renderLaunchList();
 }
 
 function updatePlayerReadout(info) {
