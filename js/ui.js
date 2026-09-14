@@ -23,13 +23,16 @@ let workouts = loadWorkouts();
 let currentWorkout = null; // entraînement en cours d'édition
 let editingSequenceId = null; // null => nouvelle séquence
 let player = null;
+let currentViewName = "view-menu";
 
 const el = {};
 const ids = [
   "header-title", "btn-back",
-  "view-list", "btn-new-workout", "workout-list", "empty-state",
-  "btn-install-app", "ios-install-hint",
-  "btn-view-history", "view-history", "history-list", "history-empty-state",
+  "view-menu", "btn-install-app", "ios-install-hint",
+  "menu-btn-history", "menu-btn-launch", "menu-btn-manage", "menu-btn-compose",
+  "view-history", "history-list", "history-empty-state",
+  "view-launch-list", "launch-list", "launch-empty-state",
+  "view-manage-list", "manage-list", "manage-empty-state", "btn-new-workout",
   "view-editor", "workout-name", "sequence-list", "sequence-empty-state",
   "btn-add-sequence", "btn-start-workout", "btn-delete-workout",
   "view-player", "player-gps-status", "player-steps-list",
@@ -40,7 +43,7 @@ const ids = [
   "seq-distance-value", "seq-distance-voice-mode",
   "seq-speed-enabled", "fields-speed-option", "seq-speed-target", "seq-speed-tolerance",
   "seq-repetitions",
-  "btn-settings", "settings-dialog", "settings-form",
+  "btn-settings", "settings-dialog", "settings-form", "settings-full-fields",
   "set-volume", "set-firstname", "btn-share-app",
 ];
 
@@ -62,17 +65,29 @@ function persist() {
 const APP_TITLE = "Forest, le compositeur de vos séances";
 
 const VIEW_TITLES = {
-  "view-list": APP_TITLE,
-  "view-editor": "Type de séance",
-  "view-player": "En cours…",
+  "view-menu": APP_TITLE,
   "view-history": "Historique",
+  "view-launch-list": "Vos séances type",
+  "view-manage-list": "Vos séances type",
+  "view-editor": "Type de séance",
+  "view-player": "Séance en cours",
+};
+
+// Page précédente vers laquelle revenir depuis chaque vue (view-editor et view-player
+// sont gérés au cas par cas : le premier dépend de l'état de la séquence, le second n'a
+// pas de bouton retour du tout).
+const BACK_TARGETS = {
+  "view-history": "view-menu",
+  "view-launch-list": "view-menu",
+  "view-manage-list": "view-menu",
 };
 
 function showView(name) {
   Object.keys(VIEW_TITLES).forEach((id) => {
     el[id].hidden = id !== name;
   });
-  el["btn-back"].hidden = name === "view-list";
+  currentViewName = name;
+  el["btn-back"].hidden = name === "view-menu" || name === "view-player";
   el["header-title"].textContent = VIEW_TITLES[name] || APP_TITLE;
 }
 
@@ -102,36 +117,49 @@ function formatDateTime(timestamp) {
   return `${date} ${time}`;
 }
 
-function renderWorkoutList() {
-  const list = el["workout-list"];
-  list.innerHTML = "";
-  el["empty-state"].hidden = workouts.length > 0;
+/** Rendu partagé pour les deux listes de séances type ('launch' : ▶️ seul, 'manage' : ✏️ seul). */
+function renderWorkoutCards(listEl, emptyEl, mode) {
+  listEl.innerHTML = "";
+  emptyEl.hidden = workouts.length > 0;
 
   for (const w of workouts) {
     const li = document.createElement("li");
     li.className = "card";
     const totalSeq = w.sequences.reduce((n, s) => n + (s.repetitions || 1), 0);
+    const actionHtml =
+      mode === "launch"
+        ? '<button data-action="start" title="Lancer">▶️</button>'
+        : '<button data-action="edit" title="Modifier">✏️</button>';
     li.innerHTML = `
       <div class="card-main">
         <p class="card-title"></p>
         <p class="card-subtitle">${w.sequences.length} séquence(s) · ${totalSeq} étape(s) au total</p>
       </div>
-      <div class="card-actions">
-        <button data-action="edit" title="Modifier">✏️</button>
-        <button data-action="start" title="Lancer">▶️</button>
-      </div>
+      <div class="card-actions">${actionHtml}</div>
     `;
     li.querySelector(".card-title").textContent = w.name || "Entraînement sans nom";
-    li.querySelector('[data-action="edit"]').addEventListener("click", () => openEditor(w));
-    li.querySelector('[data-action="start"]').addEventListener("click", () => {
-      if (w.sequences.length === 0) {
-        alert("Ajoute au moins une séquence avant de lancer cet entraînement.");
-        return;
-      }
-      startPlayer(w);
-    });
-    list.appendChild(li);
+
+    if (mode === "launch") {
+      li.querySelector('[data-action="start"]').addEventListener("click", () => {
+        if (w.sequences.length === 0) {
+          alert("Ajoute au moins une séquence avant de lancer cet entraînement.");
+          return;
+        }
+        startPlayer(w);
+      });
+    } else {
+      li.querySelector('[data-action="edit"]').addEventListener("click", () => openEditor(w));
+    }
+    listEl.appendChild(li);
   }
+}
+
+function renderLaunchList() {
+  renderWorkoutCards(el["launch-list"], el["launch-empty-state"], "launch");
+}
+
+function renderManageList() {
+  renderWorkoutCards(el["manage-list"], el["manage-empty-state"], "manage");
 }
 
 function openEditor(workout) {
@@ -417,8 +445,8 @@ function startPlayer(workout) {
     onComplete: () => {
       markTileDone(player.steps.length - 1);
       saveHistoryEntry(player.getSummary());
-      showView("view-list");
-      renderWorkoutList();
+      showView("view-launch-list");
+      renderLaunchList();
     },
   });
   renderStepTiles(player.steps);
@@ -434,8 +462,8 @@ function stopPlayerWithConfirm() {
   if (confirm("Enregistrer cette séance dans l'historique ?")) {
     saveHistoryEntry(summary);
   }
-  showView("view-list");
-  renderWorkoutList();
+  showView("view-launch-list");
+  renderLaunchList();
 }
 
 function updatePlayerReadout(info) {
@@ -460,24 +488,40 @@ function updatePlayerReadout(info) {
 
 function wireEvents() {
   el["btn-back"].addEventListener("click", () => {
-    if (!el["view-player"].hidden) {
-      stopPlayerWithConfirm();
+    if (currentViewName === "view-editor") {
+      syncCurrentWorkout(); // abandonne le type de séance s'il n'a aucune séquence
+      showView("view-manage-list");
+      renderManageList();
       return;
     }
-    if (!el["view-editor"].hidden) {
-      syncCurrentWorkout(); // abandonne le type de séance s'il n'a aucune séquence
-    }
-    showView("view-list");
-    renderWorkoutList();
+    const target = BACK_TARGETS[currentViewName] || "view-menu";
+    showView(target);
+    if (target === "view-launch-list") renderLaunchList();
+    else if (target === "view-manage-list") renderManageList();
+    else if (target === "view-history") renderHistoryList();
   });
 
-  el["btn-new-workout"].addEventListener("click", () => {
+  el["menu-btn-history"].addEventListener("click", () => {
+    renderHistoryList();
+    showView("view-history");
+  });
+
+  el["menu-btn-launch"].addEventListener("click", () => {
+    renderLaunchList();
+    showView("view-launch-list");
+  });
+
+  el["menu-btn-manage"].addEventListener("click", () => {
+    renderManageList();
+    showView("view-manage-list");
+  });
+
+  el["menu-btn-compose"].addEventListener("click", () => {
     openEditor(newWorkout()); // pas encore enregistré : il faut au moins une séquence
   });
 
-  el["btn-view-history"].addEventListener("click", () => {
-    renderHistoryList();
-    showView("view-history");
+  el["btn-new-workout"].addEventListener("click", () => {
+    openEditor(newWorkout());
   });
 
   el["workout-name"].addEventListener("input", () => {
@@ -491,8 +535,8 @@ function wireEvents() {
     if (confirm("Supprimer définitivement cet entraînement ?")) {
       workouts = workouts.filter((w) => w.id !== currentWorkout.id);
       persist();
-      showView("view-list");
-      renderWorkoutList();
+      showView("view-manage-list");
+      renderManageList();
     }
   });
 
@@ -537,7 +581,7 @@ function wireEvents() {
     stopPlayerWithConfirm();
   });
 
-  el["btn-settings"].addEventListener("click", () => openSettingsDialog());
+  el["btn-settings"].addEventListener("click", () => openSettingsDialog(currentViewName === "view-player"));
 
   let previewTimer = null;
   const previewNow = () => {
@@ -578,21 +622,25 @@ function wireEvents() {
 
   el["settings-dialog"].addEventListener("close", () => {
     if (el["settings-dialog"].returnValue !== "save") return;
-    const settings = {
-      voiceVolume: parseFloat(el["set-volume"].value),
-      firstName: el["set-firstname"].value.trim() || "Olivier",
-      voiceGender: el["settings-form"].querySelector('input[name="set-gender"]:checked').value,
-    };
+    const previous = loadSettings();
+    const settings = el["settings-full-fields"].hidden
+      ? { ...previous, voiceVolume: parseFloat(el["set-volume"].value) }
+      : {
+          voiceVolume: parseFloat(el["set-volume"].value),
+          firstName: el["set-firstname"].value.trim() || "Olivier",
+          voiceGender: el["settings-form"].querySelector('input[name="set-gender"]:checked').value,
+        };
     saveSettings(settings);
     applyAudioSettings(settings);
   });
 }
 
-function openSettingsDialog() {
+function openSettingsDialog(limitedToVolume) {
   const settings = loadSettings();
   el["set-volume"].value = settings.voiceVolume;
   el["set-firstname"].value = settings.firstName;
   el["settings-form"].querySelector(`input[name="set-gender"][value="${settings.voiceGender}"]`).checked = true;
+  el["settings-full-fields"].hidden = !!limitedToVolume;
   el["settings-dialog"].showModal();
 }
 
@@ -639,6 +687,5 @@ export function initUI() {
   applyAudioSettings(loadSettings());
   wireEvents();
   setupInstallPrompt();
-  showView("view-list");
-  renderWorkoutList();
+  showView("view-menu");
 }

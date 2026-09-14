@@ -24,19 +24,27 @@ html, body {
 
 body {
   padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 .app-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 16px calc(14px + env(safe-area-inset-top)) 16px;
-  padding-top: max(14px, env(safe-area-inset-top));
   background: var(--green);
   color: #fff;
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 14px 16px calc(14px + env(safe-area-inset-top)) 16px;
+  padding-top: max(14px, env(safe-area-inset-top));
 }
 
 .app-header h1 {
@@ -51,33 +59,51 @@ body {
   border: none;
   color: #fff;
   font-size: 1.3rem;
-  padding: 4px 8px;
+  padding: 4px 10px;
   cursor: pointer;
+}
+
+/* aligne visuellement l'engrenage sur les pictos d'action des cartes (celles-ci ont
+   14px de marge interne en plus, via .card { padding: 14px }) */
+#btn-settings {
+  margin-right: 14px;
 }
 
 main {
   max-width: 560px;
+  width: 100%;
   margin: 0 auto;
   padding: 16px;
   padding-bottom: 48px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .view[hidden] { display: none; }
 
-.toolbar {
+.menu-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
 }
 
-.btn-link {
-  background: none;
-  border: none;
-  color: var(--green);
+.btn-menu {
+  width: 100%;
+  background: var(--green);
+  color: #fff;
   font-weight: 600;
-  padding: 8px 0;
+  font-size: 1rem;
+  padding: 18px 20px;
+  text-align: left;
+  border-radius: 12px;
 }
 
 .history-badge {
@@ -244,15 +270,31 @@ dialog::backdrop {
   background: rgba(0,0,0,0.45);
 }
 
-#sequence-form {
+#sequence-form,
+#settings-form {
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-#sequence-form h2 {
+#sequence-form h2,
+#settings-form h2 {
   margin: 0 0 4px 0;
+}
+
+#settings-full-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#settings-full-fields[hidden] {
+  display: none;
+}
+
+#btn-share-app {
+  margin-top: 10px;
 }
 
 .field {
@@ -344,7 +386,7 @@ fieldset.field legend {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin: 8px 0 0 0;
+  margin: 20px 0 0 0;
   padding: 0;
 }
 
@@ -457,11 +499,18 @@ fieldset.field legend {
   min-width: 140px;
 }
 
-/* liste des types de séance : bouton bas de page centré */
+/* bouton d'action fixé en bas de la vue, avec marge interne */
 .bottom-actions {
   display: flex;
   justify-content: center;
-  margin-top: 24px;
+  margin-top: auto;
+  padding-top: 24px;
+  padding-bottom: 8px;
+}
+
+/* historique : la poubelle reste sur la ligne du titre, même si le détail est déplié */
+#history-list .card {
+  align-items: flex-start;
 }
 
 /* historique : détail dépliable par séquence */

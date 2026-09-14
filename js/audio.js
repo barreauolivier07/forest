@@ -83,6 +83,16 @@ function pickVoiceForGender(gender) {
   return voices.find((v) => hints.test(v.name)) || voices[0];
 }
 
+// Beaucoup de téléphones n'ont qu'une seule voix française installée : le choix de voix
+// retomberait alors toujours sur la même. On garantit malgré tout une différence audible
+// en jouant aussi sur la hauteur (pitch), indépendamment de la voix trouvée.
+const PITCH_MALE = 0.85;
+const PITCH_FEMALE = 1.2;
+
+function pitchForGender(gender) {
+  return gender === "female" ? PITCH_FEMALE : PITCH_MALE;
+}
+
 let currentVolume = 1;
 let currentGender = "male";
 
@@ -100,6 +110,7 @@ export function speak(text) {
     const voice = pickVoiceForGender(currentGender);
     if (voice) utter.voice = voice;
     utter.rate = 1;
+    utter.pitch = pitchForGender(currentGender);
     utter.volume = currentVolume;
     window.speechSynthesis.speak(utter);
   } catch {
@@ -116,6 +127,7 @@ export function previewVoice(text, volume, gender) {
     utter.lang = "fr-FR";
     const voice = pickVoiceForGender(gender);
     if (voice) utter.voice = voice;
+    utter.pitch = pitchForGender(gender);
     utter.volume = volume;
     window.speechSynthesis.speak(utter);
   } catch {
