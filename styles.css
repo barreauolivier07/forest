@@ -88,18 +88,12 @@ main {
 
 .view[hidden] { display: none; }
 
-#view-menu {
-  position: relative;
-}
-
 .app-version {
-  position: absolute;
-  left: 0;
-  bottom: 2px;
-  margin: 0;
-  font-size: 0.7rem;
+  margin: 14px 0 110px 0; /* léger espace sous les boutons, puis la marge basse d'écran */
+  font-size: 0.75rem;
   color: var(--muted);
-  opacity: 0.6;
+  opacity: 0.7;
+  /* pas de retrait horizontal : aligné exactement sur le liseré des blocs */
 }
 
 .hero-illustration-wrap {
@@ -120,7 +114,6 @@ main {
   flex-direction: column;
   gap: 28px;
   margin-top: auto;
-  margin-bottom: 130px; /* laisse environ la hauteur de deux boutons en bas d'écran */
 }
 
 .menu-block {

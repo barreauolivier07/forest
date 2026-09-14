@@ -92,7 +92,7 @@ function persist() {
 // À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
 // affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
 // arrivée sur un téléphone donné.
-const APP_VERSION = "14";
+const APP_VERSION = "15";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -730,7 +730,7 @@ export function initUI() {
   applyAudioSettings(loadSettings());
   buildMmSsPicker("picker-time-duration");
   buildMmSsPicker("picker-time-alert");
-  el["app-version"].textContent = `v${APP_VERSION}`;
+  el["app-version"].textContent = `Forest, version ${APP_VERSION}`;
   wireEvents();
   setupInstallPrompt();
   showView("view-menu");
