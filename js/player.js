@@ -50,12 +50,16 @@ export class WorkoutPlayer {
     this.paused = false;
     this.timer = null;
     this.wakeLock = null;
+    this.lastProgress = 0;
+    this.totalPausedMs = 0;
 
     const needsGps = this.steps.some((s) => s.sequence.metricType === "distance" || s.sequence.speedEnabled);
     this.gps = needsGps && isGeolocationSupported() ? new GpsTracker((state) => this._onGpsUpdate(state)) : null;
   }
 
   start() {
+    this.startedAtDate = Date.now(); // horodatage affiché dans l'historique
+    this.startedAtPerf = performance.now(); // horloge monotone pour calculer la durée réelle
     if (this.gps) this.gps.start();
     this._requestWakeLock();
     this._goToStep(0);
@@ -73,8 +77,30 @@ export class WorkoutPlayer {
     if (!this.paused) return;
     const pausedDuration = performance.now() - this.pausedAt;
     this.stepDeadline += pausedDuration;
+    this.totalPausedMs += pausedDuration;
     this.paused = false;
     if (this.gps) this.gps.setPaused(false);
+  }
+
+  /** Résumé de la séance (à appeler avant ou juste après stop()) pour l'historique. */
+  getSummary() {
+    const totalSteps = this.steps.length;
+    const stepsCompleted = Math.min(this.stepIdx, totalSteps);
+    const completed = this.stepIdx >= totalSteps;
+    const currentProgress = completed ? 0 : Math.max(0, Math.min(1, this.lastProgress || 0));
+    const achievementRatio = totalSteps > 0 ? Math.min(1, (stepsCompleted + currentProgress) / totalSteps) : 0;
+
+    let activeMs = performance.now() - this.startedAtPerf - this.totalPausedMs;
+    if (this.paused) activeMs -= performance.now() - this.pausedAt;
+
+    return {
+      workoutId: this.workout.id,
+      workoutName: this.workout.name,
+      startedAt: this.startedAtDate,
+      durationSec: Math.max(0, Math.round(activeMs / 1000)),
+      achievementRatio,
+      completed,
+    };
   }
 
   stop() {
@@ -223,6 +249,8 @@ export class WorkoutPlayer {
       info.currentSpeedKmh = this.gps ? this.gps.speedKmh : 0;
       info.targetSpeedKmh = seq.targetSpeedKmh;
     }
+
+    this.lastProgress = info.progress;
 
     const next = this.steps[this.stepIdx + 1];
     info.nextStepLabel = next ? describeStep(next) : null;

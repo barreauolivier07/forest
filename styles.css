@@ -65,8 +65,36 @@ main {
 
 .toolbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 16px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--green);
+  font-weight: 600;
+  padding: 8px 0;
+}
+
+.history-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.history-badge.completed {
+  background: #e3f5ea;
+  color: #1f6f4a;
+}
+
+.history-badge.interrupted {
+  background: #fbeaea;
+  color: #b3382c;
 }
 
 .btn-install {

@@ -26,10 +26,17 @@
       Pour installer sur iPhone : appuie sur <strong>Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong>.
     </p>
     <div class="toolbar">
+      <button id="btn-view-history" class="btn-link">🕘 Historique</button>
       <button id="btn-new-workout" class="btn-primary">+ Nouvel entraînement</button>
     </div>
     <ul id="workout-list" class="card-list"></ul>
     <p id="empty-state" class="empty-state">Aucun entraînement pour l'instant. Crée ton premier entraînement fractionné !</p>
+  </section>
+
+  <!-- HISTORIQUE DES SEANCES -->
+  <section id="view-history" class="view" hidden>
+    <ul id="history-list" class="card-list"></ul>
+    <p id="history-empty-state" class="empty-state">Aucune séance enregistrée pour l'instant.</p>
   </section>
 
   <!-- EDITEUR D'ENTRAINEMENT -->

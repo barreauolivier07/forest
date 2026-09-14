@@ -1,4 +1,5 @@
 const STORAGE_KEY = "forest.workouts.v1";
+const HISTORY_KEY = "forest.history.v1";
 
 export function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -41,4 +42,17 @@ export function duplicateSequence(seq) {
 
 export function newWorkout() {
   return { id: uid(), name: "", sequences: [] };
+}
+
+export function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveHistory(history) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }

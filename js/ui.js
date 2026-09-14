@@ -1,4 +1,13 @@
-import { loadWorkouts, saveWorkouts, newSequence, newWorkout, duplicateSequence, uid } from "./storage.js";
+import {
+  loadWorkouts,
+  saveWorkouts,
+  newSequence,
+  newWorkout,
+  duplicateSequence,
+  loadHistory,
+  saveHistory,
+  uid,
+} from "./storage.js";
 import { unlockAudio } from "./audio.js";
 import {
   WorkoutPlayer,
@@ -18,6 +27,7 @@ const ids = [
   "header-title", "btn-back",
   "view-list", "btn-new-workout", "workout-list", "empty-state",
   "btn-install-app", "ios-install-hint",
+  "btn-view-history", "view-history", "history-list", "history-empty-state",
   "view-editor", "workout-name", "sequence-list", "sequence-empty-state",
   "btn-add-sequence", "btn-start-workout", "btn-delete-workout",
   "view-player", "player-step-index", "player-progress-fill", "player-step-name",
@@ -46,13 +56,26 @@ function persist() {
   saveWorkouts(workouts);
 }
 
+const VIEW_TITLES = {
+  "view-list": "Forest",
+  "view-editor": "Entraînement",
+  "view-player": "En cours…",
+  "view-history": "Historique",
+};
+
 function showView(name) {
-  ["view-list", "view-editor", "view-player"].forEach((id) => {
+  Object.keys(VIEW_TITLES).forEach((id) => {
     el[id].hidden = id !== name;
   });
   el["btn-back"].hidden = name === "view-list";
-  el["header-title"].textContent =
-    name === "view-list" ? "Forest" : name === "view-editor" ? "Entraînement" : "En cours…";
+  el["header-title"].textContent = VIEW_TITLES[name] || "Forest";
+}
+
+function formatDateTime(timestamp) {
+  const d = new Date(timestamp);
+  const date = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return `${date} ${time}`;
 }
 
 function renderWorkoutList() {
@@ -137,6 +160,45 @@ function renderSequenceList() {
     });
     list.appendChild(li);
   });
+}
+
+function saveHistoryEntry(summary) {
+  const history = loadHistory();
+  history.unshift({ id: uid(), ...summary });
+  saveHistory(history);
+}
+
+function renderHistoryList() {
+  const list = el["history-list"];
+  list.innerHTML = "";
+  const history = loadHistory();
+  el["history-empty-state"].hidden = history.length > 0;
+
+  for (const entry of history) {
+    const li = document.createElement("li");
+    li.className = "card";
+    li.innerHTML = `
+      <div class="card-main">
+        <p class="card-title"></p>
+        <p class="card-subtitle"></p>
+      </div>
+      <div class="card-actions">
+        <button data-action="delete" title="Supprimer">🗑️</button>
+      </div>
+    `;
+    li.querySelector(".card-title").textContent =
+      `${entry.workoutName || "Entraînement sans nom"} — ${formatDateTime(entry.startedAt)}`;
+    const badgeClass = entry.completed ? "completed" : "interrupted";
+    const badgeLabel = entry.completed ? "Terminé" : "Interrompu";
+    li.querySelector(".card-subtitle").innerHTML =
+      `${formatMmSs(entry.durationSec)} · ${Math.round(entry.achievementRatio * 100)}% des objectifs · ` +
+      `<span class="history-badge ${badgeClass}">${badgeLabel}</span>`;
+    li.querySelector('[data-action="delete"]').addEventListener("click", () => {
+      saveHistory(loadHistory().filter((h) => h.id !== entry.id));
+      renderHistoryList();
+    });
+    list.appendChild(li);
+  }
 }
 
 function moveSequence(idx, delta) {
@@ -224,11 +286,25 @@ function startPlayer(workout) {
       el["player-gps-status"].textContent = status ? `GPS : ${status}` : "";
     },
     onComplete: () => {
+      saveHistoryEntry(player.getSummary());
       showView("view-list");
       renderWorkoutList();
     },
   });
   player.start();
+}
+
+/** Demande confirmation pour arrêter la séance en cours, puis propose de l'enregistrer. */
+function stopPlayerWithConfirm() {
+  if (!player) return;
+  if (!confirm("Arrêter l'entraînement en cours ?")) return;
+  const summary = player.getSummary();
+  player.stop();
+  if (confirm("Enregistrer cette séance dans l'historique ?")) {
+    saveHistoryEntry(summary);
+  }
+  showView("view-list");
+  renderWorkoutList();
 }
 
 function updatePlayerReadout(info) {
@@ -251,11 +327,7 @@ function updatePlayerReadout(info) {
 function wireEvents() {
   el["btn-back"].addEventListener("click", () => {
     if (!el["view-player"].hidden) {
-      if (confirm("Arrêter l'entraînement en cours ?")) {
-        player?.stop();
-        showView("view-list");
-        renderWorkoutList();
-      }
+      stopPlayerWithConfirm();
       return;
     }
     persist();
@@ -268,6 +340,11 @@ function wireEvents() {
     workouts.push(w);
     persist();
     openEditor(w);
+  });
+
+  el["btn-view-history"].addEventListener("click", () => {
+    renderHistoryList();
+    showView("view-history");
   });
 
   el["workout-name"].addEventListener("input", () => {
@@ -324,11 +401,7 @@ function wireEvents() {
   });
 
   el["btn-player-stop"].addEventListener("click", () => {
-    if (confirm("Arrêter l'entraînement en cours ?")) {
-      player?.stop();
-      showView("view-list");
-      renderWorkoutList();
-    }
+    stopPlayerWithConfirm();
   });
 }
 
