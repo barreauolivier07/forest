@@ -30,8 +30,7 @@ const ids = [
   "btn-view-history", "view-history", "history-list", "history-empty-state",
   "view-editor", "workout-name", "sequence-list", "sequence-empty-state",
   "btn-add-sequence", "btn-start-workout", "btn-delete-workout",
-  "view-player", "player-step-index", "player-progress-fill", "player-step-name",
-  "player-big-readout", "player-sub-readout", "player-gps-status", "player-next-step",
+  "view-player", "player-gps-status", "player-steps-list",
   "btn-player-pause", "btn-player-stop",
   "sequence-dialog", "sequence-form", "seq-name", "seq-start-sound",
   "fields-time", "fields-distance",
@@ -197,6 +196,31 @@ function saveHistoryEntry(summary) {
   saveHistory(history);
 }
 
+function buildHistoryStepLi(step, index) {
+  const li = document.createElement("li");
+
+  const nameDiv = document.createElement("div");
+  nameDiv.className = "history-step-name";
+  nameDiv.textContent = `${index + 1}. ${step.name}`;
+  li.appendChild(nameDiv);
+
+  const metaDiv = document.createElement("div");
+  metaDiv.className = "history-step-meta";
+  const planned =
+    step.metricType === "time" ? formatMmSs(step.plannedDurationSec) : formatDistance(step.plannedDistanceM);
+  const statusLabel = step.completed ? "Terminé" : "Interrompu";
+  let metaText =
+    `Prévu ${planned} · Réalisé ${formatMmSs(step.durationSec)} · ` +
+    `${Math.round(step.achievementRatio * 100)}% · ${statusLabel}`;
+  if (step.speedComplianceRatio != null) {
+    metaText += ` · ⚡ ${Math.round(step.speedComplianceRatio * 100)}% dans la cible`;
+  }
+  metaDiv.textContent = metaText;
+  li.appendChild(metaDiv);
+
+  return li;
+}
+
 function renderHistoryList() {
   const list = el["history-list"];
   list.innerHTML = "";
@@ -226,6 +250,20 @@ function renderHistoryList() {
     li.querySelector(".card-subtitle").outerHTML =
       `<p class="card-subtitle">${formatMmSs(entry.durationSec)} · ${Math.round(entry.achievementRatio * 100)}% des objectifs · ` +
       `<span class="history-badge ${badgeClass}">${badgeLabel}</span></p>${speedLine}`;
+
+    if (entry.steps && entry.steps.length > 0) {
+      const details = document.createElement("details");
+      details.className = "history-details";
+      const summary = document.createElement("summary");
+      summary.textContent = "Détail des séquences";
+      details.appendChild(summary);
+      const stepsList = document.createElement("ul");
+      stepsList.className = "history-steps";
+      entry.steps.forEach((step, i) => stepsList.appendChild(buildHistoryStepLi(step, i)));
+      details.appendChild(stepsList);
+      li.querySelector(".card-main").appendChild(details);
+    }
+
     li.querySelector('[data-action="delete"]').addEventListener("click", () => {
       saveHistory(loadHistory().filter((h) => h.id !== entry.id));
       renderHistoryList();
@@ -302,6 +340,57 @@ function collectSequenceFromForm() {
   return base;
 }
 
+/** Texte d'info d'un pavé pour une séquence à venir (pas encore démarrée). */
+function upcomingTileDetail(seq) {
+  const parts = [];
+  parts.push(seq.metricType === "time" ? `⏱ ${formatMmSs(seq.durationSec)}` : `📏 ${formatDistance(seq.distanceM)}`);
+  if (seq.speedEnabled) parts.push(`⚡ cible ${seq.targetSpeedKmh} km/h`);
+  return parts.join(" · ");
+}
+
+/** Texte d'info d'un pavé une fois sa séquence terminée. */
+function doneTileDetail(stat) {
+  const parts = [`✓ ${formatMmSs(stat.durationSec)}`];
+  if (stat.speedComplianceRatio != null) {
+    parts.push(`⚡ ${Math.round(stat.speedComplianceRatio * 100)}% dans la cible`);
+  }
+  return parts.join(" · ");
+}
+
+/** Construit la liste (une fois) des pavés représentant toute la séance à venir. */
+function renderStepTiles(steps) {
+  const list = el["player-steps-list"];
+  list.innerHTML = "";
+  steps.forEach((step) => {
+    const li = document.createElement("li");
+    li.className = "step-tile state-upcoming";
+    li.innerHTML = `
+      <div class="step-tile-fill"></div>
+      <div class="step-tile-content">
+        <div class="step-tile-header">
+          <span class="step-tile-name"></span>
+          <span class="step-tile-percent"></span>
+        </div>
+        <div class="step-tile-detail"></div>
+      </div>
+    `;
+    li.querySelector(".step-tile-name").textContent = describeStep(step);
+    li.querySelector(".step-tile-detail").textContent = upcomingTileDetail(step.sequence);
+    list.appendChild(li);
+  });
+}
+
+/** Marque le pavé d'index `index` comme terminé, avec ses statistiques réelles. */
+function markTileDone(index) {
+  const tile = el["player-steps-list"].children[index];
+  const stat = player.stepStats[player.stepStats.length - 1];
+  if (!tile || !stat) return;
+  tile.className = "step-tile state-done";
+  tile.querySelector(".step-tile-fill").style.width = "100%";
+  tile.querySelector(".step-tile-percent").textContent = "✓";
+  tile.querySelector(".step-tile-detail").textContent = doneTileDetail(stat);
+}
+
 function startPlayer(workout) {
   unlockAudio();
   currentWorkout = workout;
@@ -309,21 +398,26 @@ function startPlayer(workout) {
   el["btn-player-pause"].textContent = "⏸ Pause";
 
   player = new WorkoutPlayer(workout, {
-    onStepStart: (step, index, total) => {
-      el["player-step-index"].textContent = `Étape ${index + 1}/${total}`;
-      el["player-step-name"].textContent = describeStep(step);
-      el["player-progress-fill"].style.width = "0%";
+    onStepStart: (step, index) => {
+      if (index > 0) markTileDone(index - 1);
+      const tile = el["player-steps-list"].children[index];
+      if (tile) {
+        tile.className = "step-tile state-active";
+        tile.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
     },
     onTick: (info) => updatePlayerReadout(info),
     onGpsStatus: (status) => {
       el["player-gps-status"].textContent = status ? `GPS : ${status}` : "";
     },
     onComplete: () => {
+      markTileDone(player.steps.length - 1);
       saveHistoryEntry(player.getSummary());
       showView("view-list");
       renderWorkoutList();
     },
   });
+  renderStepTiles(player.steps);
   player.start();
 }
 
@@ -341,20 +435,23 @@ function stopPlayerWithConfirm() {
 }
 
 function updatePlayerReadout(info) {
-  el["player-progress-fill"].style.width = `${Math.max(0, Math.min(1, info.progress || 0)) * 100}%`;
-  el["player-next-step"].textContent = info.nextStepLabel ? `Suivant : ${info.nextStepLabel}` : "Dernière étape";
+  const tile = el["player-steps-list"].children[info.index];
+  if (!tile) return;
 
-  const speedNote = info.speedEnabled
-    ? `${info.currentSpeedKmh.toFixed(1)} km/h (cible ${info.targetSpeedKmh} km/h)`
-    : "";
+  const fillPct = Math.max(0, Math.min(1, info.progress || 0)) * 100;
+  tile.querySelector(".step-tile-fill").style.width = `${fillPct}%`;
+  tile.querySelector(".step-tile-percent").textContent = `${Math.round(fillPct)}%`;
 
+  const parts = [];
   if (info.metricType === "time") {
-    el["player-big-readout"].textContent = formatMmSs(info.remainingSec);
-    el["player-sub-readout"].textContent = speedNote;
+    parts.push(`⏱ ${formatMmSs(info.remainingSec)} restant`);
   } else if (info.metricType === "distance") {
-    el["player-big-readout"].textContent = formatDistance(info.distanceM);
-    el["player-sub-readout"].textContent = `Objectif ${formatDistance(info.targetDistanceM)}` + (speedNote ? ` · ${speedNote}` : "");
+    parts.push(`📏 ${formatDistance(info.distanceM)} / ${formatDistance(info.targetDistanceM)}`);
   }
+  if (info.speedEnabled) {
+    parts.push(`⚡ ${info.currentSpeedKmh.toFixed(1)} km/h (cible ${info.targetSpeedKmh} km/h)`);
+  }
+  tile.querySelector(".step-tile-detail").textContent = parts.join(" · ");
 }
 
 function wireEvents() {

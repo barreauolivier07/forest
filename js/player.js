@@ -54,6 +54,7 @@ export class WorkoutPlayer {
     this.totalPausedMs = 0;
     this.speedSamplesTotal = 0;
     this.speedSamplesOnTarget = 0;
+    this.stepStats = []; // détail par séquence exécutée, pour l'historique
 
     const needsGps = this.steps.some((s) => s.sequence.metricType === "distance" || s.sequence.speedEnabled);
     this.gps = needsGps && isGeolocationSupported() ? new GpsTracker((state) => this._onGpsUpdate(state)) : null;
@@ -99,6 +100,10 @@ export class WorkoutPlayer {
     const speedComplianceRatio =
       this.speedSamplesTotal > 0 ? this.speedSamplesOnTarget / this.speedSamplesTotal : null;
 
+    // Le détail par séquence : tout ce qui est déjà terminé, plus l'étape en cours si la
+    // séance a été arrêtée avant sa fin naturelle.
+    const steps = completed ? this.stepStats : [...this.stepStats, this._buildStepStat(false)];
+
     return {
       workoutId: this.workout.id,
       workoutName: this.workout.name,
@@ -107,6 +112,7 @@ export class WorkoutPlayer {
       achievementRatio,
       speedComplianceRatio,
       completed,
+      steps,
     };
   }
 
@@ -136,6 +142,12 @@ export class WorkoutPlayer {
   }
 
   _goToStep(idx) {
+    // La séquence quittée vient de se terminer normalement (repétition suivante ou fin) :
+    // on enregistre ses statistiques réelles avant de passer à la suite.
+    if (this.stepIdx >= 0 && this.stepIdx < this.steps.length) {
+      this.stepStats.push(this._buildStepStat(true));
+    }
+
     this.stepIdx = idx;
     if (idx >= this.steps.length) {
       this.stop();
@@ -151,6 +163,11 @@ export class WorkoutPlayer {
     this.alertedDistanceLead = false;
     this.lastSpeedAlertAt = 0;
     this.speedZone = null; // 'below' | 'onTarget' | 'above'
+    this.lastProgress = 0;
+    this.stepStartPerf = performance.now();
+    this.stepPausedMsAtStart = this.totalPausedMs;
+    this.stepSpeedSamplesTotal = 0;
+    this.stepSpeedSamplesOnTarget = 0;
 
     if (this.gps) this.gps.reset();
 
@@ -163,6 +180,30 @@ export class WorkoutPlayer {
 
     this.callbacks.onStepStart(step, idx, this.steps.length);
     this._emitTick();
+  }
+
+  /** Statistiques réelles de la séquence en cours (this.stepIdx), terminée ou non. */
+  _buildStepStat(completed) {
+    const step = this.steps[this.stepIdx];
+    const seq = step.sequence;
+
+    let activeMs = performance.now() - this.stepStartPerf - (this.totalPausedMs - this.stepPausedMsAtStart);
+    if (this.paused) activeMs -= performance.now() - this.pausedAt;
+
+    const achievementRatio = completed ? 1 : Math.max(0, Math.min(1, this.lastProgress || 0));
+    const speedComplianceRatio =
+      this.stepSpeedSamplesTotal > 0 ? this.stepSpeedSamplesOnTarget / this.stepSpeedSamplesTotal : null;
+
+    return {
+      name: describeStep(step),
+      metricType: seq.metricType,
+      plannedDurationSec: seq.metricType === "time" ? seq.durationSec : null,
+      plannedDistanceM: seq.metricType === "distance" ? seq.distanceM : null,
+      durationSec: Math.max(0, Math.round(activeMs / 1000)),
+      achievementRatio,
+      speedComplianceRatio,
+      completed,
+    };
   }
 
   _tick() {
@@ -217,9 +258,14 @@ export class WorkoutPlayer {
     else if (current > target + tol) zone = "above";
     else zone = "onTarget";
 
-    // Comptabilise chaque relevé (indépendamment des alertes) pour le % de respect de la vitesse.
+    // Comptabilise chaque relevé (indépendamment des alertes) pour le % de respect de la vitesse,
+    // à la fois pour la séance entière et pour la séquence en cours.
     this.speedSamplesTotal += 1;
-    if (zone === "onTarget") this.speedSamplesOnTarget += 1;
+    this.stepSpeedSamplesTotal += 1;
+    if (zone === "onTarget") {
+      this.speedSamplesOnTarget += 1;
+      this.stepSpeedSamplesOnTarget += 1;
+    }
 
     if (zone === this.speedZone) return;
     const now = performance.now();
@@ -262,9 +308,6 @@ export class WorkoutPlayer {
     }
 
     this.lastProgress = info.progress;
-
-    const next = this.steps[this.stepIdx + 1];
-    info.nextStepLabel = next ? describeStep(next) : null;
 
     this.callbacks.onTick(info);
   }

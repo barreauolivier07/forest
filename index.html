@@ -27,10 +27,12 @@
     </p>
     <div class="toolbar">
       <button id="btn-view-history" class="btn-link">🕘 Historique</button>
-      <button id="btn-new-workout" class="btn-primary">+ Ajouter une nouvelle séance type</button>
     </div>
     <ul id="workout-list" class="card-list"></ul>
     <p id="empty-state" class="empty-state">Aucun entraînement pour l'instant. Crée ton premier entraînement fractionné !</p>
+    <div class="bottom-actions">
+      <button id="btn-new-workout" class="btn-primary">+ Composer une nouvelle séance type</button>
+    </div>
   </section>
 
   <!-- HISTORIQUE DES SEANCES -->
@@ -56,19 +58,9 @@
 
   <!-- LECTEUR D'ENTRAINEMENT -->
   <section id="view-player" class="view" hidden>
-    <div class="player-progress">
-      <span id="player-step-index">Étape 1/1</span>
-      <div class="progress-bar"><div id="player-progress-fill" class="progress-fill"></div></div>
-    </div>
+    <p id="player-gps-status" class="gps-status"></p>
 
-    <div class="player-main">
-      <p id="player-step-name" class="player-step-name">—</p>
-      <p id="player-big-readout" class="player-big-readout">00:00</p>
-      <p id="player-sub-readout" class="player-sub-readout"></p>
-      <p id="player-gps-status" class="gps-status"></p>
-    </div>
-
-    <p id="player-next-step" class="player-next-step"></p>
+    <ul id="player-steps-list" class="player-steps-list"></ul>
 
     <div class="player-controls">
       <button id="btn-player-pause" class="btn-secondary">⏸ Pause</button>
