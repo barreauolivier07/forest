@@ -56,9 +56,11 @@ function persist() {
   saveWorkouts(workouts);
 }
 
+const APP_TITLE = "Forest, le compositeur de vos séances";
+
 const VIEW_TITLES = {
-  "view-list": "Forest",
-  "view-editor": "Entraînement",
+  "view-list": APP_TITLE,
+  "view-editor": "Type de séance",
   "view-player": "En cours…",
   "view-history": "Historique",
 };
@@ -68,7 +70,26 @@ function showView(name) {
     el[id].hidden = id !== name;
   });
   el["btn-back"].hidden = name === "view-list";
-  el["header-title"].textContent = VIEW_TITLES[name] || "Forest";
+  el["header-title"].textContent = VIEW_TITLES[name] || APP_TITLE;
+}
+
+function editorTitleFor(workout) {
+  return workout.sequences.length === 0
+    ? "Création d'un nouveau type de séance"
+    : "Modifier la séance type";
+}
+
+/** Un type de séance n'est conservé que s'il contient au moins une séquence. */
+function syncCurrentWorkout() {
+  if (!currentWorkout) return;
+  const idx = workouts.findIndex((w) => w.id === currentWorkout.id);
+  if (currentWorkout.sequences.length > 0) {
+    if (idx === -1) workouts.push(currentWorkout);
+    persist();
+  } else if (idx !== -1) {
+    workouts.splice(idx, 1);
+    persist();
+  }
 }
 
 function formatDateTime(timestamp) {
@@ -114,6 +135,7 @@ function openEditor(workout) {
   currentWorkout = workout;
   el["workout-name"].value = workout.name;
   showView("view-editor");
+  el["header-title"].textContent = editorTitleFor(workout);
   renderSequenceList();
 }
 
@@ -147,19 +169,26 @@ function renderSequenceList() {
     li.querySelector('[data-action="down"]').addEventListener("click", () => moveSequence(idx, 1));
     li.querySelector('[data-action="duplicate"]').addEventListener("click", () => {
       currentWorkout.sequences.splice(idx + 1, 0, duplicateSequence(seq));
-      persist();
+      syncCurrentWorkout();
       renderSequenceList();
     });
     li.querySelector('[data-action="edit"]').addEventListener("click", () => openSequenceDialog(seq));
     li.querySelector('[data-action="delete"]').addEventListener("click", () => {
       if (confirm("Supprimer cette séquence ?")) {
         currentWorkout.sequences.splice(idx, 1);
-        persist();
+        syncCurrentWorkout();
         renderSequenceList();
       }
     });
     list.appendChild(li);
   });
+
+  const hasSequences = currentWorkout.sequences.length > 0;
+  el["btn-start-workout"].hidden = !hasSequences;
+  el["btn-delete-workout"].hidden = !hasSequences;
+  if (!el["view-editor"].hidden) {
+    el["header-title"].textContent = editorTitleFor(currentWorkout);
+  }
 }
 
 function saveHistoryEntry(summary) {
@@ -210,7 +239,7 @@ function moveSequence(idx, delta) {
   if (target < 0 || target >= currentWorkout.sequences.length) return;
   const arr = currentWorkout.sequences;
   [arr[idx], arr[target]] = [arr[target], arr[idx]];
-  persist();
+  syncCurrentWorkout();
   renderSequenceList();
 }
 
@@ -334,16 +363,15 @@ function wireEvents() {
       stopPlayerWithConfirm();
       return;
     }
-    persist();
+    if (!el["view-editor"].hidden) {
+      syncCurrentWorkout(); // abandonne le type de séance s'il n'a aucune séquence
+    }
     showView("view-list");
     renderWorkoutList();
   });
 
   el["btn-new-workout"].addEventListener("click", () => {
-    const w = newWorkout();
-    workouts.push(w);
-    persist();
-    openEditor(w);
+    openEditor(newWorkout()); // pas encore enregistré : il faut au moins une séquence
   });
 
   el["btn-view-history"].addEventListener("click", () => {
@@ -353,7 +381,7 @@ function wireEvents() {
 
   el["workout-name"].addEventListener("input", () => {
     currentWorkout.name = el["workout-name"].value;
-    persist();
+    syncCurrentWorkout();
   });
 
   el["btn-add-sequence"].addEventListener("click", () => openSequenceDialog(null));
@@ -389,7 +417,7 @@ function wireEvents() {
     const idx = currentWorkout.sequences.findIndex((s) => s.id === seq.id);
     if (idx >= 0) currentWorkout.sequences[idx] = seq;
     else currentWorkout.sequences.push(seq);
-    persist();
+    syncCurrentWorkout();
     renderSequenceList();
   });
 
