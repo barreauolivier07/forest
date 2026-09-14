@@ -1,0 +1,33 @@
+<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustration d'une personne qui court tranquillement dans la nature">
+  <!-- sol -->
+  <path d="M0 195 Q 100 182 200 192 T 400 186" stroke="#cfe6da" stroke-width="3" fill="none" stroke-linecap="round" />
+
+  <!-- soleil -->
+  <circle cx="332" cy="46" r="20" fill="#ffe3a1" />
+
+  <!-- arbres (pointe en haut, base sur le tronc) -->
+  <g>
+    <rect x="51" y="160" width="8" height="14" rx="2" fill="#9c7b57" />
+    <polygon points="55,120 32,160 78,160" fill="#8fd0ac" />
+    <polygon points="55,100 40,132 70,132" fill="#6fc094" />
+  </g>
+  <g>
+    <rect x="347" y="168" width="10" height="18" rx="2" fill="#9c7b57" />
+    <polygon points="352,122 322,168 382,168" fill="#a8ddc2" />
+    <polygon points="352,100 334,140 370,140" fill="#8fd0ac" />
+  </g>
+  <g>
+    <rect x="384" y="180" width="8" height="13" rx="2" fill="#9c7b57" />
+    <polygon points="388,144 370,180 406,180" fill="#cdeedb" />
+  </g>
+
+  <!-- silhouette : jogging tranquille -->
+  <g fill="none" stroke="#1f6f4a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="176" cy="98" r="10" fill="#1f6f4a" stroke="none" />
+    <path d="M176 111 L 172 146" />
+    <path d="M172 146 L 158 167 L 148 183" />
+    <path d="M172 146 L 191 168 L 201 186" />
+    <path d="M175 114 L 159 126 L 149 116" />
+    <path d="M175 114 L 191 130 L 196 147" />
+  </g>
+</svg>

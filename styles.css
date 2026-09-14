@@ -88,11 +88,29 @@ main {
 
 .view[hidden] { display: none; }
 
-.menu-actions {
+.hero-illustration-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34vh;
+}
+
+.hero-illustration {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+}
+
+.menu-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.menu-block {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 8px;
 }
 
 .btn-menu {
@@ -102,8 +120,44 @@ main {
   font-weight: 600;
   font-size: 1rem;
   padding: 18px 20px;
-  text-align: left;
   border-radius: 12px;
+}
+
+/* libellé centré, picto fixé à gauche, sur tous les boutons icône + texte */
+.btn-menu,
+.btn-install,
+#btn-share-app,
+#btn-add-sequence,
+#btn-start-workout {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.btn-menu .btn-icon,
+.btn-install .btn-icon,
+#btn-share-app .btn-icon,
+#btn-add-sequence .btn-icon,
+#btn-start-workout .btn-icon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 1;
+}
+
+.btn-menu .btn-label,
+.btn-install .btn-label,
+#btn-share-app .btn-label,
+#btn-add-sequence .btn-label,
+#btn-start-workout .btn-label {
+  flex: 1;
+  text-align: center;
+}
+
+.btn-install[hidden],
+#btn-start-workout[hidden] {
+  display: none;
 }
 
 .history-badge {
@@ -497,15 +551,6 @@ fieldset.field legend {
 
 .player-controls button {
   min-width: 140px;
-}
-
-/* bouton d'action fixé en bas de la vue, avec marge interne */
-.bottom-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 24px;
-  padding-bottom: 8px;
 }
 
 /* historique : la poubelle reste sur la ligne du titre, même si le détail est déplié */

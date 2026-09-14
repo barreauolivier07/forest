@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#1f6f4a" />
-<title>Forest, le compositeur de vos séances</title>
+<title>Forest, le compositeur de séances</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
@@ -24,18 +24,34 @@
 
   <!-- MENU PRINCIPAL -->
   <section id="view-menu" class="view">
-    <button id="btn-install-app" class="btn-install" hidden>📲 Installer l'application</button>
+    <button id="btn-install-app" class="btn-install" hidden>
+      <span class="btn-icon">📲</span><span class="btn-label">Installer l'application</span>
+    </button>
     <p id="ios-install-hint" class="ios-install-hint" hidden>
       Pour installer sur iPhone : appuie sur <strong>Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong>.
     </p>
 
-    <div class="menu-actions">
-      <button id="menu-btn-history" class="btn-menu">🕘 Historique de vos séances</button>
-      <button id="menu-btn-launch" class="btn-menu">▶️ Lancer une séance</button>
-      <button id="menu-btn-manage" class="btn-menu">✏️ Modifier vos séances type</button>
+    <div class="hero-illustration-wrap">
+      <img class="hero-illustration" src="icons/hero-illustration.svg" alt="" />
     </div>
-    <div class="bottom-actions">
-      <button id="menu-btn-compose" class="btn-menu">🎼 Composer une séance type</button>
+
+    <div class="menu-blocks">
+      <div class="menu-block">
+        <button id="menu-btn-launch" class="btn-menu">
+          <span class="btn-icon">▶️</span><span class="btn-label">Lancer une séance</span>
+        </button>
+        <button id="menu-btn-history" class="btn-menu">
+          <span class="btn-icon">🕘</span><span class="btn-label">Historique des séances</span>
+        </button>
+      </div>
+      <div class="menu-block">
+        <button id="menu-btn-manage" class="btn-menu">
+          <span class="btn-icon">✏️</span><span class="btn-label">Modifier les séances types</span>
+        </button>
+        <button id="menu-btn-compose" class="btn-menu">
+          <span class="btn-icon">🎹</span><span class="btn-label">Composer une séance type</span>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -55,22 +71,23 @@
   <section id="view-manage-list" class="view" hidden>
     <ul id="manage-list" class="card-list"></ul>
     <p id="manage-empty-state" class="empty-state">Aucun type de séance pour l'instant.</p>
-    <div class="bottom-actions">
-      <button id="btn-new-workout" class="btn-primary">Composer une nouvelle séance type</button>
-    </div>
   </section>
 
   <!-- EDITEUR D'ENTRAINEMENT -->
   <section id="view-editor" class="view" hidden>
-    <input id="workout-name" class="input-title" type="text" placeholder="Nom de l'entraînement (ex: Fractionné 30/30)" />
+    <input id="workout-name" class="input-title" type="text" placeholder="Nom de la séance (ex: Fractionné 30/30)" />
 
     <ul id="sequence-list" class="card-list"></ul>
     <p id="sequence-empty-state" class="empty-state">Ajoute une première séquence (échauffement, sprint, récupération...).</p>
 
-    <button id="btn-add-sequence" class="btn-secondary btn-block">+ Ajouter une séquence</button>
+    <button id="btn-add-sequence" class="btn-secondary btn-block">
+      <span class="btn-icon">+</span><span class="btn-label">Ajouter une séquence</span>
+    </button>
 
     <div class="editor-actions">
-      <button id="btn-start-workout" class="btn-success btn-block">▶ Lancer cet entraînement</button>
+      <button id="btn-start-workout" class="btn-success btn-block">
+        <span class="btn-icon">▶</span><span class="btn-label">Lancer cet entraînement</span>
+      </button>
       <button id="btn-delete-workout" class="btn-danger-text">Supprimer cet entraînement</button>
     </div>
   </section>
@@ -195,7 +212,9 @@
         <p class="field-hint">Selon les voix installées sur ton téléphone, les deux choix peuvent parfois se ressembler.</p>
       </fieldset>
 
-      <button type="button" id="btn-share-app" class="btn-secondary btn-block">🔗 Partager l'application</button>
+      <button type="button" id="btn-share-app" class="btn-secondary btn-block">
+        <span class="btn-icon">🔗</span><span class="btn-label">Partager l'application</span>
+      </button>
     </div>
 
     <menu class="dialog-actions">

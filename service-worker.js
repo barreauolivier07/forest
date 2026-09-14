@@ -1,4 +1,4 @@
-const CACHE_NAME = "forest-cache-v9";
+const CACHE_NAME = "forest-cache-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,6 +13,7 @@ const APP_SHELL = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-180.png",
+  "./icons/hero-illustration.svg",
 ];
 
 self.addEventListener("install", (event) => {

@@ -1,5 +1,5 @@
 {
-  "name": "Forest, le compositeur de vos séances",
+  "name": "Forest, le compositeur de séances",
   "short_name": "Forest",
   "description": "Créez et lancez des entraînements fractionnés avec sons et annonces vocales.",
   "start_url": "./index.html",

@@ -32,7 +32,7 @@ const ids = [
   "menu-btn-history", "menu-btn-launch", "menu-btn-manage", "menu-btn-compose",
   "view-history", "history-list", "history-empty-state",
   "view-launch-list", "launch-list", "launch-empty-state",
-  "view-manage-list", "manage-list", "manage-empty-state", "btn-new-workout",
+  "view-manage-list", "manage-list", "manage-empty-state",
   "view-editor", "workout-name", "sequence-list", "sequence-empty-state",
   "btn-add-sequence", "btn-start-workout", "btn-delete-workout",
   "view-player", "player-gps-status", "player-steps-list",
@@ -62,13 +62,13 @@ function persist() {
   saveWorkouts(workouts);
 }
 
-const APP_TITLE = "Forest, le compositeur de vos séances";
+const APP_TITLE = "Forest, le compositeur de séances";
 
 const VIEW_TITLES = {
   "view-menu": APP_TITLE,
   "view-history": "Historique",
-  "view-launch-list": "Vos séances type",
-  "view-manage-list": "Vos séances type",
+  "view-launch-list": "Les séances type",
+  "view-manage-list": "Les séances type",
   "view-editor": "Type de séance",
   "view-player": "Séance en cours",
 };
@@ -93,7 +93,7 @@ function showView(name) {
 
 function editorTitleFor(workout) {
   return workout.sequences.length === 0
-    ? "Création d'un nouveau type de séance"
+    ? "Création d'un type de séance"
     : "Modifier la séance type";
 }
 
@@ -520,10 +520,6 @@ function wireEvents() {
     openEditor(newWorkout()); // pas encore enregistré : il faut au moins une séquence
   });
 
-  el["btn-new-workout"].addEventListener("click", () => {
-    openEditor(newWorkout());
-  });
-
   el["workout-name"].addEventListener("input", () => {
     currentWorkout.name = el["workout-name"].value;
     syncCurrentWorkout();
@@ -600,7 +596,7 @@ function wireEvents() {
 
   el["btn-share-app"].addEventListener("click", async () => {
     const shareData = {
-      title: "Forest, le compositeur de vos séances",
+      title: APP_TITLE,
       text: "Essaie Forest, mon app d'entraînements fractionnés !",
       url: location.origin + location.pathname,
     };
