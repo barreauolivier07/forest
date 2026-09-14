@@ -380,6 +380,68 @@ dialog::backdrop {
   accent-color: var(--green);
 }
 
+/* sélecteur à rouleaux minutes / secondes */
+.mmss-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 120px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.mmss-highlight {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 40px;
+  height: 40px;
+  background: #eaf5ef;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.mmss-col {
+  position: relative;
+  z-index: 1;
+  height: 120px;
+  width: 60px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mmss-col::-webkit-scrollbar {
+  display: none;
+}
+
+.mmss-item {
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+  scroll-snap-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.15rem;
+  color: var(--text);
+  user-select: none;
+}
+
+.mmss-pad {
+  height: 40px;
+}
+
+.mmss-sep {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text);
+  z-index: 1;
+}
+
 .field-checkbox {
   flex-direction: row;
   align-items: center;

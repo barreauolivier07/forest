@@ -130,17 +130,24 @@
     </fieldset>
 
     <div id="fields-time" class="type-fields">
-      <label class="field">
-        <span>Durée (mm:ss)</span>
-        <input id="seq-time-duration" type="text" inputmode="numeric" placeholder="00:30" value="00:30" />
-      </label>
-      <label class="field">
-        <span>Avertissement vocal</span>
-        <select id="seq-time-voice-mode">
-          <option value="none">Aucun</option>
-          <option value="beforeEnd" selected>10 secondes avant la fin</option>
-        </select>
-      </label>
+      <div class="field">
+        <span>Durée (min : sec)</span>
+        <div class="mmss-picker" id="picker-time-duration">
+          <div class="mmss-highlight"></div>
+          <div class="mmss-col" data-unit="min"></div>
+          <div class="mmss-sep">:</div>
+          <div class="mmss-col" data-unit="sec"></div>
+        </div>
+      </div>
+      <div class="field">
+        <span>Avertissement vocal avant la fin (00 : 00 = aucun)</span>
+        <div class="mmss-picker" id="picker-time-alert">
+          <div class="mmss-highlight"></div>
+          <div class="mmss-col" data-unit="min"></div>
+          <div class="mmss-sep">:</div>
+          <div class="mmss-col" data-unit="sec"></div>
+        </div>
+      </div>
     </div>
 
     <div id="fields-distance" class="type-fields" hidden>

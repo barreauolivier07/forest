@@ -24,6 +24,10 @@ let currentWorkout = null; // entraînement en cours d'édition
 let editingSequenceId = null; // null => nouvelle séquence
 let player = null;
 let currentViewName = "view-menu";
+// Capturées au clic sur "Enregistrer" : une fois le dialogue fermé, les rouleaux masqués
+// perdent leur position de défilement, donc on lit leur valeur avant la fermeture.
+let pendingDurationSec = 30;
+let pendingAlertLeadSec = 10;
 
 const el = {};
 const ids = [
@@ -37,9 +41,8 @@ const ids = [
   "btn-add-sequence", "btn-start-workout", "btn-delete-workout",
   "view-player", "player-gps-status", "player-steps-list",
   "btn-player-pause", "btn-player-stop",
-  "sequence-dialog", "sequence-form", "seq-name", "seq-start-sound",
+  "sequence-dialog", "sequence-form", "seq-name", "seq-start-sound", "btn-save-sequence",
   "fields-time", "fields-distance",
-  "seq-time-duration", "seq-time-voice-mode",
   "seq-distance-value", "seq-distance-voice-mode",
   "seq-speed-enabled", "fields-speed-option", "seq-speed-target", "seq-speed-tolerance",
   "seq-repetitions",
@@ -47,15 +50,39 @@ const ids = [
   "set-volume", "set-firstname", "btn-share-app",
 ];
 
-function parseMmSs(str) {
-  if (!str) return 0;
-  const parts = String(str).trim().split(":");
-  if (parts.length === 2) {
-    const m = parseInt(parts[0], 10) || 0;
-    const s = parseInt(parts[1], 10) || 0;
-    return m * 60 + s;
-  }
-  return parseInt(str, 10) || 0;
+const MMSS_ITEM_HEIGHT = 40;
+
+/** Construit les 60 valeurs (00-59) de chaque colonne d'un sélecteur à rouleaux. */
+function buildMmSsPicker(pickerId) {
+  const picker = document.getElementById(pickerId);
+  picker.querySelectorAll(".mmss-col").forEach((col) => {
+    col.innerHTML = "";
+    col.appendChild(Object.assign(document.createElement("div"), { className: "mmss-pad" }));
+    for (let i = 0; i < 60; i++) {
+      const item = document.createElement("div");
+      item.className = "mmss-item";
+      item.textContent = String(i).padStart(2, "0");
+      col.appendChild(item);
+    }
+    col.appendChild(Object.assign(document.createElement("div"), { className: "mmss-pad" }));
+  });
+}
+
+function setMmSsPickerValue(pickerId, totalSeconds) {
+  const picker = document.getElementById(pickerId);
+  const min = Math.max(0, Math.min(59, Math.floor(totalSeconds / 60)));
+  const sec = Math.max(0, Math.min(59, Math.floor(totalSeconds % 60)));
+  picker.querySelector('.mmss-col[data-unit="min"]').scrollTop = min * MMSS_ITEM_HEIGHT;
+  picker.querySelector('.mmss-col[data-unit="sec"]').scrollTop = sec * MMSS_ITEM_HEIGHT;
+}
+
+function getMmSsPickerValue(pickerId) {
+  const picker = document.getElementById(pickerId);
+  const min = picker.querySelector('.mmss-col[data-unit="min"]');
+  const sec = picker.querySelector('.mmss-col[data-unit="sec"]');
+  const minVal = Math.max(0, Math.min(59, Math.round(min.scrollTop / MMSS_ITEM_HEIGHT)));
+  const secVal = Math.max(0, Math.min(59, Math.round(sec.scrollTop / MMSS_ITEM_HEIGHT)));
+  return minVal * 60 + secVal;
 }
 
 function persist() {
@@ -327,9 +354,6 @@ function openSequenceDialog(seq) {
   el["sequence-form"].querySelector(`input[name="seq-type"][value="${s.metricType}"]`).checked = true;
   setSequenceTypeFields(s.metricType);
 
-  el["seq-time-duration"].value = formatMmSs(s.durationSec);
-  el["seq-time-voice-mode"].value = s.voiceAlertMode;
-
   el["seq-distance-value"].value = s.distanceM;
   el["seq-distance-voice-mode"].value = s.voiceAlertMode;
 
@@ -340,7 +364,11 @@ function openSequenceDialog(seq) {
 
   el["seq-repetitions"].value = s.repetitions;
 
+  // les rouleaux doivent être visibles (dialogue ouvert) pour que le positionnement du
+  // défilement soit pris en compte par le navigateur.
   el["sequence-dialog"].showModal();
+  setMmSsPickerValue("picker-time-duration", s.durationSec);
+  setMmSsPickerValue("picker-time-alert", s.voiceAlertMode === "none" ? 0 : s.alertLeadSec || 10);
 }
 
 function collectSequenceFromForm() {
@@ -362,8 +390,9 @@ function collectSequenceFromForm() {
   };
 
   if (type === "time") {
-    base.durationSec = Math.max(1, parseMmSs(el["seq-time-duration"].value));
-    base.voiceAlertMode = el["seq-time-voice-mode"].value;
+    base.durationSec = Math.max(1, pendingDurationSec);
+    base.alertLeadSec = pendingAlertLeadSec;
+    base.voiceAlertMode = pendingAlertLeadSec > 0 ? "beforeEnd" : "none";
   } else if (type === "distance") {
     base.distanceM = Math.max(1, parseInt(el["seq-distance-value"].value, 10) || 1);
     base.voiceAlertMode = el["seq-distance-voice-mode"].value;
@@ -557,6 +586,13 @@ function wireEvents() {
     el["fields-speed-option"].hidden = !e.target.checked;
   });
 
+  el["btn-save-sequence"].addEventListener("click", () => {
+    // le dialogue est encore ouvert ici : on capture les rouleaux avant qu'ils ne
+    // soient masqués (et donc réinitialisés) par la fermeture du dialogue.
+    pendingDurationSec = getMmSsPickerValue("picker-time-duration");
+    pendingAlertLeadSec = getMmSsPickerValue("picker-time-alert");
+  });
+
   el["sequence-dialog"].addEventListener("close", () => {
     if (el["sequence-dialog"].returnValue !== "save") return;
     const seq = collectSequenceFromForm();
@@ -686,6 +722,8 @@ function setupInstallPrompt() {
 export function initUI() {
   for (const id of ids) el[id] = document.getElementById(id);
   applyAudioSettings(loadSettings());
+  buildMmSsPicker("picker-time-duration");
+  buildMmSsPicker("picker-time-alert");
   wireEvents();
   setupInstallPrompt();
   showView("view-menu");
