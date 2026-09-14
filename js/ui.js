@@ -190,9 +190,13 @@ function renderHistoryList() {
       `${entry.workoutName || "Entraînement sans nom"} — ${formatDateTime(entry.startedAt)}`;
     const badgeClass = entry.completed ? "completed" : "interrupted";
     const badgeLabel = entry.completed ? "Terminé" : "Interrompu";
-    li.querySelector(".card-subtitle").innerHTML =
-      `${formatMmSs(entry.durationSec)} · ${Math.round(entry.achievementRatio * 100)}% des objectifs · ` +
-      `<span class="history-badge ${badgeClass}">${badgeLabel}</span>`;
+    const speedLine =
+      entry.speedComplianceRatio != null
+        ? `<p class="card-subtitle">⚡ Vitesse cible respectée : ${Math.round(entry.speedComplianceRatio * 100)}%</p>`
+        : "";
+    li.querySelector(".card-subtitle").outerHTML =
+      `<p class="card-subtitle">${formatMmSs(entry.durationSec)} · ${Math.round(entry.achievementRatio * 100)}% des objectifs · ` +
+      `<span class="history-badge ${badgeClass}">${badgeLabel}</span></p>${speedLine}`;
     li.querySelector('[data-action="delete"]').addEventListener("click", () => {
       saveHistory(loadHistory().filter((h) => h.id !== entry.id));
       renderHistoryList();

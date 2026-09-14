@@ -52,6 +52,8 @@ export class WorkoutPlayer {
     this.wakeLock = null;
     this.lastProgress = 0;
     this.totalPausedMs = 0;
+    this.speedSamplesTotal = 0;
+    this.speedSamplesOnTarget = 0;
 
     const needsGps = this.steps.some((s) => s.sequence.metricType === "distance" || s.sequence.speedEnabled);
     this.gps = needsGps && isGeolocationSupported() ? new GpsTracker((state) => this._onGpsUpdate(state)) : null;
@@ -93,12 +95,17 @@ export class WorkoutPlayer {
     let activeMs = performance.now() - this.startedAtPerf - this.totalPausedMs;
     if (this.paused) activeMs -= performance.now() - this.pausedAt;
 
+    // null si aucune séquence de la séance n'avait de vitesse cible paramétrée.
+    const speedComplianceRatio =
+      this.speedSamplesTotal > 0 ? this.speedSamplesOnTarget / this.speedSamplesTotal : null;
+
     return {
       workoutId: this.workout.id,
       workoutName: this.workout.name,
       startedAt: this.startedAtDate,
       durationSec: Math.max(0, Math.round(activeMs / 1000)),
       achievementRatio,
+      speedComplianceRatio,
       completed,
     };
   }
@@ -209,6 +216,10 @@ export class WorkoutPlayer {
     if (current < target - tol) zone = "below";
     else if (current > target + tol) zone = "above";
     else zone = "onTarget";
+
+    // Comptabilise chaque relevé (indépendamment des alertes) pour le % de respect de la vitesse.
+    this.speedSamplesTotal += 1;
+    if (zone === "onTarget") this.speedSamplesOnTarget += 1;
 
     if (zone === this.speedZone) return;
     const now = performance.now();
