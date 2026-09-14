@@ -17,6 +17,7 @@ const el = {};
 const ids = [
   "header-title", "btn-back",
   "view-list", "btn-new-workout", "workout-list", "empty-state",
+  "btn-install-app", "ios-install-hint",
   "view-editor", "workout-name", "sequence-list", "sequence-empty-state",
   "btn-add-sequence", "btn-start-workout", "btn-delete-workout",
   "view-player", "player-step-index", "player-progress-fill", "player-step-name",
@@ -331,9 +332,48 @@ function wireEvents() {
   });
 }
 
+function isStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+function setupInstallPrompt() {
+  if (isStandalone()) return; // déjà installée, rien à proposer
+
+  if (isIos()) {
+    el["ios-install-hint"].hidden = false;
+    return;
+  }
+
+  let deferredPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    el["btn-install-app"].hidden = false;
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    el["btn-install-app"].hidden = true;
+  });
+
+  el["btn-install-app"].addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    el["btn-install-app"].hidden = true;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  });
+}
+
 export function initUI() {
   for (const id of ids) el[id] = document.getElementById(id);
   wireEvents();
+  setupInstallPrompt();
   showView("view-list");
   renderWorkoutList();
 }
