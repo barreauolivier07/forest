@@ -1,4 +1,4 @@
-const CACHE_NAME = "forest-cache-v13";
+const CACHE_NAME = "forest-cache-v14";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -18,7 +18,19 @@ const APP_SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
+    caches
+      .open(CACHE_NAME)
+      .then((cache) =>
+        // cache.addAll() peut réutiliser une réponse déjà présente dans le cache HTTP du
+        // navigateur (donc potentiellement périmée) : on force un vrai aller-retour réseau
+        // pour chaque fichier afin de garantir des mises à jour fiables.
+        Promise.all(
+          APP_SHELL.map((url) =>
+            fetch(url, { cache: "reload" }).then((response) => cache.put(url, response))
+          )
+        )
+      )
+      .then(() => self.skipWaiting())
   );
 });
 

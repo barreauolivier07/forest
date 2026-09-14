@@ -32,7 +32,7 @@ let pendingAlertLeadSec = 10;
 const el = {};
 const ids = [
   "header-title", "btn-back",
-  "view-menu", "btn-install-app", "ios-install-hint",
+  "view-menu", "btn-install-app", "ios-install-hint", "install-success", "app-version",
   "menu-btn-history", "menu-btn-launch", "menu-btn-manage", "menu-btn-compose",
   "view-history", "history-list", "history-empty-state",
   "view-launch-list", "launch-list", "launch-empty-state",
@@ -88,6 +88,11 @@ function getMmSsPickerValue(pickerId) {
 function persist() {
   saveWorkouts(workouts);
 }
+
+// À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
+// affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
+// arrivée sur un téléphone donné.
+const APP_VERSION = "14";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -708,6 +713,7 @@ function setupInstallPrompt() {
   window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
     el["btn-install-app"].hidden = true;
+    el["install-success"].hidden = false;
   });
 
   el["btn-install-app"].addEventListener("click", async () => {
@@ -724,6 +730,7 @@ export function initUI() {
   applyAudioSettings(loadSettings());
   buildMmSsPicker("picker-time-duration");
   buildMmSsPicker("picker-time-alert");
+  el["app-version"].textContent = `v${APP_VERSION}`;
   wireEvents();
   setupInstallPrompt();
   showView("view-menu");

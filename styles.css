@@ -88,6 +88,20 @@ main {
 
 .view[hidden] { display: none; }
 
+#view-menu {
+  position: relative;
+}
+
+.app-version {
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
 .hero-illustration-wrap {
   display: flex;
   align-items: center;
