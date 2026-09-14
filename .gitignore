@@ -1,0 +1,3 @@
+# Certificat HTTPS auto-signé de test local (ne pas versionner la clé privée)
+.tools/cert.pem
+.tools/key.pem

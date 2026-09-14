@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1f6f4a" />
+<title>Forest — Entraînements fractionnés</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <button id="btn-back" class="icon-btn" hidden aria-label="Retour">←</button>
+  <h1 id="header-title">Forest</h1>
+</header>
+
+<main>
+
+  <!-- LISTE DES ENTRAINEMENTS -->
+  <section id="view-list" class="view">
+    <div class="toolbar">
+      <button id="btn-new-workout" class="btn-primary">+ Nouvel entraînement</button>
+    </div>
+    <ul id="workout-list" class="card-list"></ul>
+    <p id="empty-state" class="empty-state">Aucun entraînement pour l'instant. Crée ton premier entraînement fractionné !</p>
+  </section>
+
+  <!-- EDITEUR D'ENTRAINEMENT -->
+  <section id="view-editor" class="view" hidden>
+    <input id="workout-name" class="input-title" type="text" placeholder="Nom de l'entraînement (ex: Fractionné 30/30)" />
+
+    <ul id="sequence-list" class="card-list"></ul>
+    <p id="sequence-empty-state" class="empty-state">Ajoute une première séquence (échauffement, sprint, récupération...).</p>
+
+    <button id="btn-add-sequence" class="btn-secondary btn-block">+ Ajouter une séquence</button>
+
+    <div class="editor-actions">
+      <button id="btn-start-workout" class="btn-success btn-block">▶ Lancer cet entraînement</button>
+      <button id="btn-delete-workout" class="btn-danger-text">Supprimer cet entraînement</button>
+    </div>
+  </section>
+
+  <!-- LECTEUR D'ENTRAINEMENT -->
+  <section id="view-player" class="view" hidden>
+    <div class="player-progress">
+      <span id="player-step-index">Étape 1/1</span>
+      <div class="progress-bar"><div id="player-progress-fill" class="progress-fill"></div></div>
+    </div>
+
+    <div class="player-main">
+      <p id="player-step-name" class="player-step-name">—</p>
+      <p id="player-big-readout" class="player-big-readout">00:00</p>
+      <p id="player-sub-readout" class="player-sub-readout"></p>
+      <p id="player-gps-status" class="gps-status"></p>
+    </div>
+
+    <p id="player-next-step" class="player-next-step"></p>
+
+    <div class="player-controls">
+      <button id="btn-player-pause" class="btn-secondary">⏸ Pause</button>
+      <button id="btn-player-stop" class="btn-danger">⏹ Arrêter</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- FORMULAIRE SEQUENCE (modale) -->
+<dialog id="sequence-dialog">
+  <form id="sequence-form" method="dialog">
+    <h2>Séquence</h2>
+
+    <label class="field">
+      <span>Nom (optionnel)</span>
+      <input id="seq-name" type="text" placeholder="ex: Sprint, Récupération..." />
+    </label>
+
+    <label class="field field-checkbox">
+      <input id="seq-start-sound" type="checkbox" checked />
+      <span>Jouer un son au démarrage</span>
+    </label>
+
+    <fieldset class="field">
+      <legend>Type de séquence</legend>
+      <div class="radio-row">
+        <label><input type="radio" name="seq-type" value="time" checked /> Temps</label>
+        <label><input type="radio" name="seq-type" value="distance" /> Distance</label>
+      </div>
+    </fieldset>
+
+    <div id="fields-time" class="type-fields">
+      <label class="field">
+        <span>Durée (mm:ss)</span>
+        <input id="seq-time-duration" type="text" inputmode="numeric" placeholder="00:30" value="00:30" />
+      </label>
+      <label class="field">
+        <span>Avertissement vocal</span>
+        <select id="seq-time-voice-mode">
+          <option value="none">Aucun</option>
+          <option value="beforeEnd" selected>10 secondes avant la fin</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="fields-distance" class="type-fields" hidden>
+      <label class="field">
+        <span>Distance cible (mètres)</span>
+        <input id="seq-distance-value" type="number" min="10" step="10" value="200" />
+      </label>
+      <label class="field">
+        <span>Avertissement vocal</span>
+        <select id="seq-distance-voice-mode">
+          <option value="none">Aucun</option>
+          <option value="beforeEnd" selected>À 50 m de la fin</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="type-fields">
+      <label class="field field-checkbox">
+        <input id="seq-speed-enabled" type="checkbox" />
+        <span>Maintenir une vitesse cible (optionnel)</span>
+      </label>
+      <div id="fields-speed-option" hidden>
+        <label class="field">
+          <span>Vitesse cible (km/h)</span>
+          <input id="seq-speed-target" type="number" min="1" step="0.5" value="10" />
+        </label>
+        <label class="field">
+          <span>Tolérance (%)</span>
+          <input id="seq-speed-tolerance" type="number" min="1" step="1" value="5" />
+        </label>
+        <p class="field-hint">Une voix annonce la vitesse cible, puis encourage ou avertit selon ta vitesse actuelle.</p>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>Répétitions</span>
+      <input id="seq-repetitions" type="number" min="1" step="1" value="1" />
+    </label>
+
+    <menu class="dialog-actions">
+      <button value="cancel" class="btn-secondary">Annuler</button>
+      <button id="btn-save-sequence" value="save" class="btn-primary">Enregistrer</button>
+    </menu>
+  </form>
+</dialog>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
