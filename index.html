@@ -114,7 +114,11 @@
 <!-- FORMULAIRE SEQUENCE (modale) -->
 <dialog id="sequence-dialog">
   <form id="sequence-form" method="dialog">
-    <h2>Séquence</h2>
+    <div class="seq-dialog-header">
+      <h2>Séquence</h2>
+      <button type="button" id="btn-seq-help-toggle" class="btn-help-toggle">❓ Aide</button>
+    </div>
+    <p id="seq-help-banner" class="help-banner" hidden></p>
 
     <label class="field">
       <span>Nom (optionnel)</span>

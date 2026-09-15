@@ -349,6 +349,50 @@ dialog::backdrop {
   margin: 0 0 4px 0;
 }
 
+.seq-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.seq-dialog-header h2 {
+  margin: 0;
+}
+
+.btn-help-toggle {
+  background: #eaf5ef;
+  color: var(--green);
+  border: 1.5px solid var(--green);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  flex-shrink: 0;
+}
+
+.btn-help-toggle[aria-pressed="false"] {
+  background: var(--bg);
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+.help-banner {
+  margin: 0;
+  background: #eaf5ef;
+  border: 1.5px solid var(--green);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.field-help-active {
+  background: #eaf5ef;
+  border-radius: 10px;
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+
 #settings-full-fields {
   display: flex;
   flex-direction: column;

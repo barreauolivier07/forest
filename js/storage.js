@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS = {
   voiceVolume: 1, // 0..1
   firstName: "Olivier",
   voiceGender: "male", // 'male' | 'female'
+  sequenceHelpEnabled: true, // aide visuelle + vocale au focus, dans le formulaire de séquence
 };
 
 export function uid() {

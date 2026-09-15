@@ -10,7 +10,7 @@ import {
   saveSettings,
   uid,
 } from "./storage.js";
-import { unlockAudio, applyAudioSettings, previewVoice } from "./audio.js";
+import { unlockAudio, applyAudioSettings, previewVoice, speak } from "./audio.js";
 import {
   WorkoutPlayer,
   formatMmSs,
@@ -42,6 +42,7 @@ const ids = [
   "view-player", "player-gps-status", "player-steps-list",
   "btn-player-pause", "btn-player-stop",
   "sequence-dialog", "sequence-form", "seq-name", "seq-start-sound", "btn-save-sequence",
+  "btn-seq-help-toggle", "seq-help-banner",
   "fields-time", "fields-distance",
   "seq-distance-value", "seq-distance-voice-mode",
   "seq-speed-enabled", "fields-speed-option", "seq-speed-target", "seq-speed-tolerance",
@@ -92,7 +93,7 @@ function persist() {
 // À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
 // affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
 // arrivée sur un téléphone donné.
-const APP_VERSION = "17";
+const APP_VERSION = "18";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -350,6 +351,72 @@ function setSequenceTypeFields(type) {
   el["fields-distance"].hidden = type !== "distance";
 }
 
+const HELP_TEXTS = {
+  "seq-name": "Donne un nom à cette séquence, par exemple Sprint ou Récupération. C'est facultatif.",
+  "seq-start-sound": "Active cette option pour entendre un signal sonore au démarrage de la séquence.",
+  "seq-type": "Choisis si cette séquence se termine après un temps donné, ou après une distance parcourue.",
+  "picker-time-duration": "Règle la durée de la séquence en faisant défiler les minutes et les secondes.",
+  "picker-time-alert": "Règle combien de temps avant la fin une annonce vocale te prévient. Mets zéro zéro pour ne recevoir aucune alerte.",
+  "seq-distance-value": "Indique la distance à parcourir, en mètres.",
+  "seq-distance-voice-mode": "Choisis si une annonce vocale te prévient juste avant la fin de la distance.",
+  "seq-speed-enabled": "Active cette option si tu veux maintenir une vitesse cible pendant cette séquence, avec des encouragements vocaux.",
+  "seq-speed-target": "Indique la vitesse à maintenir, en kilomètres heure.",
+  "seq-speed-tolerance": "Définis la marge de tolérance autour de la vitesse cible, en pourcentage.",
+  "seq-repetitions": "Indique combien de fois cette séquence doit se répéter d'affilée.",
+};
+
+let lastHelpFieldEl = null;
+
+function triggerHelp(key, fieldEl) {
+  if (!loadSettings().sequenceHelpEnabled) return;
+  const text = HELP_TEXTS[key];
+  if (!text) return;
+
+  if (lastHelpFieldEl) lastHelpFieldEl.classList.remove("field-help-active");
+  const wrap = fieldEl ? fieldEl.closest(".field") : null;
+  if (wrap) wrap.classList.add("field-help-active");
+  lastHelpFieldEl = wrap;
+
+  el["seq-help-banner"].textContent = text;
+  el["seq-help-banner"].hidden = false;
+  speak(text);
+}
+
+function wireHelpTriggers() {
+  const focusKeys = [
+    "seq-name", "seq-start-sound", "seq-distance-value", "seq-distance-voice-mode",
+    "seq-speed-enabled", "seq-speed-target", "seq-speed-tolerance", "seq-repetitions",
+  ];
+  for (const key of focusKeys) {
+    el[key].addEventListener("focus", () => triggerHelp(key, el[key]));
+  }
+
+  el["sequence-form"].querySelectorAll('input[name="seq-type"]').forEach((radio) => {
+    radio.addEventListener("focus", () => triggerHelp("seq-type", radio));
+  });
+
+  for (const pickerId of ["picker-time-duration", "picker-time-alert"]) {
+    const picker = document.getElementById(pickerId);
+    picker.addEventListener("pointerdown", () => triggerHelp(pickerId, picker));
+  }
+
+  el["btn-seq-help-toggle"].addEventListener("click", () => {
+    const settings = loadSettings();
+    settings.sequenceHelpEnabled = !settings.sequenceHelpEnabled;
+    saveSettings(settings);
+    el["btn-seq-help-toggle"].setAttribute("aria-pressed", String(settings.sequenceHelpEnabled));
+    if (!settings.sequenceHelpEnabled) {
+      el["seq-help-banner"].hidden = true;
+      if (lastHelpFieldEl) lastHelpFieldEl.classList.remove("field-help-active");
+      lastHelpFieldEl = null;
+    } else {
+      el["seq-help-banner"].textContent = "Touche un champ pour que je t'explique à quoi il sert.";
+      el["seq-help-banner"].hidden = false;
+      speak("Aide activée. Touche un champ pour que je t'explique à quoi il sert.");
+    }
+  });
+}
+
 function openSequenceDialog(seq) {
   editingSequenceId = seq ? seq.id : null;
   const s = seq || newSequence();
@@ -368,6 +435,17 @@ function openSequenceDialog(seq) {
   el["seq-speed-tolerance"].value = Math.round(s.toleranceRatio * 100);
 
   el["seq-repetitions"].value = s.repetitions;
+
+  const helpEnabled = loadSettings().sequenceHelpEnabled;
+  el["btn-seq-help-toggle"].setAttribute("aria-pressed", String(helpEnabled));
+  if (lastHelpFieldEl) lastHelpFieldEl.classList.remove("field-help-active");
+  lastHelpFieldEl = null;
+  if (helpEnabled) {
+    el["seq-help-banner"].textContent = "Touche un champ pour que je t'explique à quoi il sert.";
+    el["seq-help-banner"].hidden = false;
+  } else {
+    el["seq-help-banner"].hidden = true;
+  }
 
   // les rouleaux doivent être visibles (dialogue ouvert) pour que le positionnement du
   // défilement soit pris en compte par le navigateur.
@@ -752,6 +830,7 @@ export function initUI() {
   buildMmSsPicker("picker-time-alert");
   el["app-version"].textContent = `Forest, version ${APP_VERSION}`;
   wireEvents();
+  wireHelpTriggers();
   setupInstallPrompt();
   showView("view-menu");
 }
