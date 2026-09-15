@@ -1,9 +1,11 @@
-import { GpsTracker, isGeolocationSupported } from "./gps.js";
+import { GpsTracker } from "./gps.js";
 import { playStartTone, playStepEndTone, playWorkoutEndTone, playAlertTick, speak } from "./audio.js";
 import { loadSettings } from "./storage.js";
 
 const TICK_MS = 200;
 const SPEED_ALERT_COOLDOWN_MS = 8000;
+// Statuts GPS considérés comme un problème empêchant le suivi distance/vitesse.
+const GPS_PROBLEM_STATUSES = new Set(["indisponible", "position refusée", "signal introuvable", "erreur GPS"]);
 
 export function formatMmSs(totalSeconds) {
   const s = Math.max(0, Math.round(totalSeconds));
@@ -59,7 +61,8 @@ export class WorkoutPlayer {
     this.firstName = loadSettings().firstName || "Olivier";
 
     const needsGps = this.steps.some((s) => s.sequence.metricType === "distance" || s.sequence.speedEnabled);
-    this.gps = needsGps && isGeolocationSupported() ? new GpsTracker((state) => this._onGpsUpdate(state)) : null;
+    this.gps = needsGps ? new GpsTracker((state) => this._onGpsUpdate(state)) : null;
+    this.gpsWarned = false; // n'avertir qu'une fois par séance si le GPS est indisponible
   }
 
   start() {
@@ -317,6 +320,10 @@ export class WorkoutPlayer {
 
   _onGpsUpdate(state) {
     this.callbacks.onGpsStatus(state.status);
+    if (!this.gpsWarned && GPS_PROBLEM_STATUSES.has(state.status)) {
+      this.gpsWarned = true;
+      speak("Attention, le signal GPS n'est pas disponible. La distance et la vitesse ne pourront pas être suivies pour cette séance.");
+    }
   }
 }
 

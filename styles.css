@@ -662,10 +662,24 @@ fieldset.field legend {
   color: var(--green);
 }
 
+.player-pre-start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.player-pre-start-actions[hidden] {
+  display: none;
+}
+
 .player-controls {
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+.player-controls[hidden] {
+  display: none;
 }
 
 .player-controls button {

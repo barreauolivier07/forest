@@ -40,7 +40,8 @@ const ids = [
   "view-editor", "workout-name", "sequence-list", "sequence-empty-state",
   "btn-add-sequence", "btn-start-workout", "btn-delete-workout",
   "view-player", "player-gps-status", "player-steps-list",
-  "btn-player-pause", "btn-player-stop",
+  "player-pre-start-actions", "btn-player-start", "btn-player-cancel",
+  "player-controls", "btn-player-pause", "btn-player-stop",
   "sequence-dialog", "sequence-form", "seq-name", "seq-start-sound", "btn-save-sequence",
   "btn-seq-help-toggle", "seq-help-banner",
   "fields-time", "fields-distance",
@@ -93,7 +94,7 @@ function persist() {
 // À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
 // affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
 // arrivée sur un téléphone donné.
-const APP_VERSION = "20";
+const APP_VERSION = "21";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -543,10 +544,12 @@ function markTileDone(index) {
 }
 
 function startPlayer(workout) {
-  unlockAudio();
   currentWorkout = workout;
   showView("view-player");
+  el["player-gps-status"].textContent = "";
   el["btn-player-pause"].textContent = "⏸ Pause";
+  el["player-pre-start-actions"].hidden = false;
+  el["player-controls"].hidden = true;
 
   player = new WorkoutPlayer(workout, {
     onStepStart: (step, index) => {
@@ -569,6 +572,14 @@ function startPlayer(workout) {
     },
   });
   renderStepTiles(player.steps);
+}
+
+/** Démarre effectivement la séance affichée, après appui sur "Démarrer la séance". */
+function beginPlayerRun() {
+  if (!player) return;
+  unlockAudio();
+  el["player-pre-start-actions"].hidden = true;
+  el["player-controls"].hidden = false;
   player.start();
 }
 
@@ -693,6 +704,14 @@ function wireEvents() {
     else currentWorkout.sequences.push(seq);
     syncCurrentWorkout();
     renderSequenceList();
+  });
+
+  el["btn-player-start"].addEventListener("click", () => beginPlayerRun());
+
+  el["btn-player-cancel"].addEventListener("click", () => {
+    player = null;
+    showView("view-launch-list");
+    renderLaunchList();
   });
 
   el["btn-player-pause"].addEventListener("click", () => {
