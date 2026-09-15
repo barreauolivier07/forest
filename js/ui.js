@@ -10,7 +10,7 @@ import {
   saveSettings,
   uid,
 } from "./storage.js";
-import { unlockAudio, applyAudioSettings, previewVoice, speak } from "./audio.js";
+import { unlockAudio, applyAudioSettings, previewVoice, speak, stopSpeaking } from "./audio.js";
 import {
   WorkoutPlayer,
   formatMmSs,
@@ -93,7 +93,7 @@ function persist() {
 // À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
 // affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
 // arrivée sur un téléphone donné.
-const APP_VERSION = "18";
+const APP_VERSION = "19";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -406,6 +406,7 @@ function wireHelpTriggers() {
     saveSettings(settings);
     el["btn-seq-help-toggle"].setAttribute("aria-pressed", String(settings.sequenceHelpEnabled));
     if (!settings.sequenceHelpEnabled) {
+      stopSpeaking();
       el["seq-help-banner"].hidden = true;
       if (lastHelpFieldEl) lastHelpFieldEl.classList.remove("field-help-active");
       lastHelpFieldEl = null;

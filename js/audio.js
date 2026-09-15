@@ -138,3 +138,13 @@ export function previewVoice(text, volume, gender) {
 export function speechSupported() {
   return "speechSynthesis" in window;
 }
+
+/** Interrompt immédiatement toute annonce vocale en cours. */
+export function stopSpeaking() {
+  if (!("speechSynthesis" in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    /* ignore */
+  }
+}
