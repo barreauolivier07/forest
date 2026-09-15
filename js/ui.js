@@ -93,7 +93,7 @@ function persist() {
 // À incrémenter à chaque déploiement, en même temps que CACHE_NAME dans service-worker.js —
 // affiché en bas de la page d'accueil pour vérifier facilement qu'une mise à jour est bien
 // arrivée sur un téléphone donné.
-const APP_VERSION = "19";
+const APP_VERSION = "20";
 
 const APP_TITLE = "Forest, le compositeur de séances";
 
@@ -143,11 +143,21 @@ function syncCurrentWorkout() {
   }
 }
 
-function formatDateTime(timestamp) {
-  const d = new Date(timestamp);
-  const date = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
-  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  return `${date} ${time}`;
+function formatDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** Ligne "jauge" (libellé + barre de progression + pourcentage) pour l'historique. */
+function buildGaugeRow(label, ratio, variant) {
+  const row = document.createElement("div");
+  row.className = "gauge-row";
+  const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+  row.innerHTML = `
+    <span class="gauge-label">${label}</span>
+    <div class="gauge-track"><div class="gauge-fill${variant ? " " + variant : ""}" style="width:${pct}%"></div></div>
+    <span class="gauge-pct">${pct}%</span>
+  `;
+  return row;
 }
 
 /** Rendu partagé pour les deux listes de séances type ('launch' : ▶️ seul, 'manage' : ✏️ seul). */
@@ -271,17 +281,13 @@ function buildHistoryStepLi(step, index) {
 
   const metaDiv = document.createElement("div");
   metaDiv.className = "history-step-meta";
-  const planned =
-    step.metricType === "time" ? formatMmSs(step.plannedDurationSec) : formatDistance(step.plannedDistanceM);
-  const statusLabel = step.completed ? "Terminé" : "Interrompu";
-  let metaText =
-    `Prévu ${planned} · Réalisé ${formatMmSs(step.durationSec)} · ` +
-    `${Math.round(step.achievementRatio * 100)}% · ${statusLabel}`;
-  if (step.speedComplianceRatio != null) {
-    metaText += ` · ⚡ ${Math.round(step.speedComplianceRatio * 100)}% dans la cible`;
-  }
-  metaDiv.textContent = metaText;
+  metaDiv.textContent = `Réalisé ${formatMmSs(step.durationSec)}`;
   li.appendChild(metaDiv);
+
+  li.appendChild(buildGaugeRow("Objectif atteint", step.achievementRatio));
+  if (step.speedComplianceRatio != null) {
+    li.appendChild(buildGaugeRow("Vitesse cible", step.speedComplianceRatio, "speed"));
+  }
 
   return li;
 }
@@ -289,7 +295,7 @@ function buildHistoryStepLi(step, index) {
 function renderHistoryList() {
   const list = el["history-list"];
   list.innerHTML = "";
-  const history = loadHistory();
+  const history = loadHistory().slice().sort((a, b) => b.startedAt - a.startedAt);
   el["history-empty-state"].hidden = history.length > 0;
 
   for (const entry of history) {
@@ -304,17 +310,17 @@ function renderHistoryList() {
         <button data-action="delete" title="Supprimer">🗑️</button>
       </div>
     `;
-    li.querySelector(".card-title").textContent =
-      `${entry.workoutName || "Entraînement sans nom"} — ${formatDateTime(entry.startedAt)}`;
+    li.querySelector(".card-title").textContent = entry.workoutName || "Entraînement sans nom";
     const badgeClass = entry.completed ? "completed" : "interrupted";
     const badgeLabel = entry.completed ? "Terminé" : "Interrompu";
-    const speedLine =
-      entry.speedComplianceRatio != null
-        ? `<p class="card-subtitle">⚡ Respect de la vitesse cible : ${Math.round(entry.speedComplianceRatio * 100)}%</p>`
-        : "";
-    li.querySelector(".card-subtitle").outerHTML =
-      `<p class="card-subtitle">${formatMmSs(entry.durationSec)} · ${Math.round(entry.achievementRatio * 100)}% des objectifs · ` +
-      `<span class="history-badge ${badgeClass}">${badgeLabel}</span></p>${speedLine}`;
+    li.querySelector(".card-subtitle").innerHTML =
+      `${formatDate(entry.startedAt)} <span class="history-badge ${badgeClass}">${badgeLabel}</span>`;
+
+    const cardMain = li.querySelector(".card-main");
+    cardMain.appendChild(buildGaugeRow("Objectifs atteints", entry.achievementRatio));
+    if (entry.speedComplianceRatio != null) {
+      cardMain.appendChild(buildGaugeRow("Vitesse cible", entry.speedComplianceRatio, "speed"));
+    }
 
     if (entry.steps && entry.steps.length > 0) {
       const details = document.createElement("details");
@@ -326,7 +332,7 @@ function renderHistoryList() {
       stepsList.className = "history-steps";
       entry.steps.forEach((step, i) => stepsList.appendChild(buildHistoryStepLi(step, i)));
       details.appendChild(stepsList);
-      li.querySelector(".card-main").appendChild(details);
+      cardMain.appendChild(details);
     }
 
     li.querySelector('[data-action="delete"]').addEventListener("click", () => {

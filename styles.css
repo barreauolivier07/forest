@@ -3,6 +3,7 @@
   --green-dark: #16523650;
   --green-dark2: #15452f;
   --red: #c0392b;
+  --blue: #2f6fb3;
   --bg: #f6f8f6;
   --card: #ffffff;
   --text: #1a1f1c;
@@ -711,4 +712,43 @@ fieldset.field legend {
 
 .history-steps .history-step-meta {
   color: var(--muted);
+}
+
+.gauge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.gauge-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.gauge-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  background: var(--green);
+}
+
+.gauge-fill.speed {
+  background: var(--blue);
+}
+
+.gauge-pct {
+  font-size: 0.75rem;
+  color: var(--text);
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
 }
